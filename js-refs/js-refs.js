@@ -1,4 +1,30 @@
 
+// PLAN OF ATTACK
+// =====
+//
+// Build a traverse function based on https://github.com/Constellation/estraverse/blob/master/estraverse.js .
+//
+// Take the VisitorKeys and annotate them with annotations like:
+// - this is an expression (e.g. if found to be of type Identifier)
+// - this is a left-hand-side
+// - this starts a new scope
+//
+// Left-hand-sides in:
+// - AssignmentExpression.left
+// - UpdateExpression.argument (increment/decrement)
+// - ForInStatement.left
+//
+// Eh, just make it AssignmentExpression!
+//
+// Annotate the tree with vars somehow.  Annotate it with parent pointers?
+// Whatever other annotations we need.
+//
+// Find the non-var Identifier expressions, then find their dotted expressions
+// somehow.
+//
+// Write unit test cases right in the app.
+
+
 if (Meteor.isClient) {
 
   Session.setDefault(
