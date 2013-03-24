@@ -1,5 +1,5 @@
 Package.describe({
-  summary: "Composable JavaScript code analysis tools"
+  summary: "JavaScript parser and analysis toolchain"
 });
 
 Package.on_use(function (api, where) {
