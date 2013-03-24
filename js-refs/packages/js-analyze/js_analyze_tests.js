@@ -31,4 +31,6 @@ Tinytest.add("js-analyze - basic", function (test) {
   test.equal(run('try { e } catch (Foo) { Foo }'), {'e': R});
   test.equal(run('var x = function y () { return String(y); }'), {'String': R});
   test.equal(run('a[b=c] = d'), {a: W, b: W, c: R, d: R});
+  test.equal(run('a.a.a[b.b.b=c.c.c] = d.d.d'),
+             {'a.a.a': W, 'b.b.b': W, 'c.c.c': R, 'd.d.d': R});
 });
