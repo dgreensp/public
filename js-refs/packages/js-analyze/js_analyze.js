@@ -49,7 +49,9 @@ JSAnalyze.findGlobalDottedRefs = function (source) {
         var ref = null;
         // Find an `escope.Reference` in the current Scope whose
         // identifier node is `===` to `node`.  If found, this
-        // means escope determined this site to be a reference.
+        // means escope determined this site to be a reference
+        // rather than some other identifier (like the `x` in
+        // `var x` or `a.x`).
         for (var i = 0; i < currentScope.references.length; i++) {
           if (currentScope.references[i].identifier === node) {
             ref = currentScope.references[i];
@@ -77,7 +79,7 @@ JSAnalyze.findGlobalDottedRefs = function (source) {
           }
           var accessType;
           // position of `expr`, aka `outer`, now determines whether this
-          // access is a READ or WRITE (including read/write)
+          // access is a READ or WRITE (which encompasses read/write)
           var outer = expr;
           var outerParent = expr._parent;
           switch (outerParent.type) {
