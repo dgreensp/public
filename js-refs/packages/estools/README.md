@@ -10,3 +10,8 @@ See:
 
 * http://constellation.github.com/slides/contents/20121118/modules.html (BSD License)
 
+Equivalent to these npm packages:
+
+* esprima
+* estraverse
+* escope

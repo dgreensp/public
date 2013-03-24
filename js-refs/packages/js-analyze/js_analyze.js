@@ -4,7 +4,7 @@ var Syntax = estraverse.Syntax;
 JSAnalyze = {};
 
 JSAnalyze.READ = 1;
-JSAnalyze.READWRITE = 2;
+JSAnalyze.WRITE = 2;
 
 // Analyze the JavaScript source code `source` and return a dictionary
 // of all the global dotted references.
@@ -13,13 +13,14 @@ JSAnalyze.READWRITE = 2;
 // `Foo.Bar.Baz`, where `Foo` is an access to a global variable not defined
 // in `source`.
 //
-// The value in the dictionary is either `JSAnalyze.READ` or
-// `JSAnalyze.READWRITE`.  A dotted reference is considered READWRITE
-// if it is assigned to in any way, or if it is part of a larger
+// The value in the dictionary is either `JSAnalyze.READ`, if the reference
+// is only ever read and not written, or `JSAnalyze.WRITE` if the reference
+// is written (only or in addition).  A dotted reference is mapped to WRITE
+// if it is every assigned to, or if it is part of a larger
 // expression that is assigned to which consists of a series of dotted
 // or bracketed member access expressions.  For example, in
 // `Foo.Bar[baz].blah = 3`, the dotted reference `Foo.Bar` is reported
-// to be READWRITE.
+// as WRITE.
 JSAnalyze.findGlobalDottedRefs = function (source) {
 
   // escope's analyzer treats vars in the top-level "Program" node as globals
@@ -76,20 +77,20 @@ JSAnalyze.findGlobalDottedRefs = function (source) {
           }
           var accessType;
           // position of `expr`, aka `outer`, now determines whether this
-          // is READ, WRITE, or READ/WRITE access
+          // access is a READ or WRITE (including read/write)
           var outer = expr;
           var outerParent = expr._parent;
           switch (outerParent.type) {
           case Syntax.AssignmentExpression:
-            accessType = ((outerParent.left === outer) ? JSAnalyze.READWRITE
+            accessType = ((outerParent.left === outer) ? JSAnalyze.WRITE
                           : JSAnalyze.READ);
             break;
           case Syntax.UpdateExpression: // prefix or postfix `++` or `--`
-            accessType = JSAnalyze.READWRITE;
+            accessType = JSAnalyze.WRITE;
             break;
           case Syntax.ForInStatement:
             accessType = (outerParent.left === outer ?
-                          JSAnalyze.READWRITE : JSAnalyze.READ);
+                          JSAnalyze.WRITE : JSAnalyze.READ);
             break;
           default:
             accessType = JSAnalyze.READ;
