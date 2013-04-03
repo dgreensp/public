@@ -53,13 +53,28 @@ _.extend(Chunk.prototype, {
   set: function (start, end) {
     this.start = start;
     this.end = end || start;
+  },
+  parentNode: function () {
+    return this.firstNode().parentNode;
   }
 });
 
-var Component = function (options) {
+_.extend(Chunk.prototype, {
+  findOne: function (selector) {
+    return DomUtils.findClipped(
+      this.parentNode(), selector, this.firstNode(), this.lastNode());
+  },
+  findAll: function (selector) {
+    return DomUtils.findAllClipped(
+      this.parentNode(), selector, this.firstNode(), this.lastNode());
+  }
+});
+
+Component = function (options) {
   this.options = options || {};
   this.isBuilt = false;
   this.isAttached = false;
+  this.isDestroyed = false;
   this.dom = null; // if built
 
   this._fragment = null; // if built; empty when attached
@@ -67,18 +82,22 @@ var Component = function (options) {
 
 _.extend(Component.prototype, {
   build: function () {
+    if (this.isDestroyed)
+      throw new Error("Component was destroyed");
     if (this.isBuilt)
       throw new Error("Component already built");
 
     var frag = this._fragment = document.createDocumentFragment();
 
-    // put stuff in fragment...
+    // XXX put stuff in fragment...
     frag.appendChild(document.createComment('empty'));
 
     this.dom = new Chunk(frag.firstChild);
     this.isBuilt = true;
   },
   attach: function (parent, before) {
+    if (this.isDestroyed)
+      throw new Error("Component was destroyed");
     if (this.isAttached)
       throw new Error("Component already attached");
 
@@ -86,10 +105,13 @@ _.extend(Component.prototype, {
       this.build();
 
     parent.insertBefore(this._fragment, before);
-    
+
     this.isAttached = true;
   },
   detach: function () {
+    if (this.isDestroyed)
+      throw new Error("Component was destroyed");
+
     var start = this.dom.firstNode();
     var end = this.dom.lastNode();
     var frag = this._fragment;
@@ -103,6 +125,16 @@ _.extend(Component.prototype, {
       frag.appendChild(n);
 
     this.isAttached = false;
+  },
+  destroy: function () {
+    this.isDestroyed = true;
+
+    // maybe GC the DOM sooner
+    this.dom = null;
+    this._fragment = null;
+  },
+  toHtml: function () {
+    // XXX ...
   }
 });
 
