@@ -97,13 +97,7 @@ Component = function (args) {
   this._fragment = null; // if built; empty when attached
   this._uniqueIdCounter = 1;
 
-  for (var k in args) {
-    if (args.hasOwnProperty(k)) {
-      // XXX check that we aren't overriding anything we shouldn't
-      // (built-in props, combined props)
-      this[k] = args[k];
-    }
-  }
+  this.args = args;
 };
 
 _.extend(Component.prototype, {
@@ -262,6 +256,11 @@ _.extend(Component.prototype, {
       this.dom.set(start, end);
     }
   },
+  update: function (args) {
+    var oldArgs = this.args;
+    this.args = args;
+    this.updated(args, oldArgs);
+  },
   findOne: function (selector) { return this.dom.findOne(selector); },
   findAll: function (selector) { return this.dom.findAll(selector); },
   firstNode: function () { return this.dom.firstNode(); },
@@ -277,6 +276,7 @@ _.extend(Component.prototype, {
   attached: function () {},
   detached: function () {},
   destroyed: function () {},
+  updated: function (args, oldArgs) {},
   // This is overridable but should probably get normal override behavior;
   // it has a return value and we only run one implementation.
   toHtml: function () {
@@ -317,7 +317,7 @@ Component.extend = function (options) {
     // each old function!
     var oldFunction = v;
     if ({init:1, build:1, built:1, attached:1, detached:1,
-         destroyed:1}.hasOwnProperty(k)) {
+         destroyed:1, updated:1}.hasOwnProperty(k)) {
       options[k] = function () {
         superClass.prototype[k].apply(this, arguments);
         oldFunction.apply(this, arguments);
@@ -364,18 +364,24 @@ DebugComponent = Component.extend({
   built: function () { debug('built', this); },
   attached: function () { debug('attached', this); },
   detached: function () { debug('detached', this); },
-  destroyed: function () { debug('destroyed', this); }
+  destroyed: function () { debug('destroyed', this); },
+  updated: function (args, oldArgs) { debug('updated', this); }
 });
 
 LI = DebugComponent.extend({
   build: function (frag) {
     var li = document.createElement('LI');
-    li.appendChild(document.createTextNode(this.text));
+    li.appendChild(document.createTextNode(this.args.text));
     frag.appendChild(li);
     this.setBounds(li);
+    this.textNode = li.firstChild;
+  },
+  updated: function (args, oldArgs) {
+    if (this.isBuilt)
+      this.textNode.nodeValue = args.text;
   },
   toHtml: function () {
-    return "<li>" + escapeForHtml(this.text) + "</li>";
+    return "<li>" + escapeForHtml(this.args.text) + "</li>";
   }
 });
 
@@ -428,3 +434,12 @@ Meteor.startup(function () {
 
   L = new UL().attach(document.body);
 });
+
+
+
+
+Model = function (obj) {
+  this._data = obj;
+  this._vars = {};
+  this._submodels = {};
+};
