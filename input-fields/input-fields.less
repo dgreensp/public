@@ -1,0 +1,81 @@
+// This CSS targets IE 8+ and modern browsers.
+
+html {
+  // Avoid weird font size adjustments in iOS Safari that
+  // make e.g. bold text smaller than the surrounding text.
+  // http://stackoverflow.com/a/12184383/1327394
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  // Remove all default margin and padding on elements,
+  // because it is inconsistent across browsers.
+  // For example, browsers may use different default margin
+  // or padding on BODY or on lists, with one browser using
+  // just padding and another using just margin.
+  padding: 0;
+  margin: 0;
+}
+
+.contain-floats () {
+ // "Micro clearfix"
+ // http://nicolasgallagher.com/micro-clearfix-hack/
+  &:after {
+    content: " ";
+    display: table;
+    clear: both;
+  }
+}
+
+.box-sizing-border-box () {
+  // Makes `width` and `height` include the padding and
+  // border of the box.  It's very hard to give dynamic sizes like
+  // `width: 100%` to text inputs and textareas with arbtirary
+  // styling any other way.
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+input[type=text] {
+  // Don't use special font or size for input text.
+  font: inherit;
+  // Gives us good positioning rules whether inline or not.
+  display: inline-block;
+  vertical-align: middle;
+  // Make `width` and `height` refer to the outer dimensions,
+  // outside the padding and border.
+  .box-sizing-border-box;
+  // Browsers are inconsistent about showing a native focus ring
+  // if we customize the border (e.g. Firefox doesn't seem to).
+  // So, have no focus ring and let the app style the focused case
+  // how it wants.
+  outline: 0;
+}
+
+input[type=text] {
+  padding: 5px;
+  border: 1px solid black;
+  &:focus {
+    border-color: red;
+  }
+  height: 30px;
+  width: 100%;
+}    
+
+.formRow {
+  .contain-floats;
+  margin: 20px;
+}
+
+.formRowLabel {
+  float: left;
+  line-height: 30px;    
+  width: 50px;
+
+  white-space: nowrap;
+}
+
+.formRowValue {
+  margin-left: 50px;
+}
