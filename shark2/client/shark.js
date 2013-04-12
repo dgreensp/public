@@ -407,23 +407,6 @@ LI = DebugComponent.extend({
   }
 });
 
-myLI = DebugComponent.extend({
-  init: function () {
-    this.addChild('1', new LI({text: this.args.data.text || ''}));
-  },
-  build: function (frag) {
-    var c = this.children['1'];
-    c.attach(frag);
-    this.setBounds(c);
-  },
-  updated: function (args, oldArgs) {
-    this.children['1'].update({text: this.args.data.text || ''});
-  },
-  toHtml: function () {
-    return this.children['1'].toHtml();
-  }
-});
-
 UL = DebugComponent.extend({
   init: function () {
     this.addChild(1, new LI({text: 'One'}));
@@ -668,6 +651,23 @@ Each = DebugComponent.extend({
 
 });
 
+MyLI = DebugComponent.extend({
+  init: function () {
+    this.addChild('1', new LI({text: this.args.data.text || ''}));
+  },
+  build: function (frag) {
+    var c = this.children['1'];
+    c.attach(frag);
+    this.setBounds(c);
+  },
+  updated: function (args, oldArgs) {
+    this.children['1'].update({text: this.args.data.text || ''});
+  },
+  toHtml: function () {
+    return this.children['1'].toHtml();
+  }
+});
+
 Meteor.startup(function () {
 //  a = new Chunk($("li").get(0));
 //  b = new Chunk($("li").get(1));
@@ -684,7 +684,7 @@ Meteor.startup(function () {
   C.insert({text: 'Bar'});
   C.insert({text: 'Baz'});
   LIST = new Each({list: C.find({}, {sort: {text: 1}}),
-                   bodyClass: myLI});
+                   bodyClass: MyLI});
 
   LIST.attach(ul);
 });
