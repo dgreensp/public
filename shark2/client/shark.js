@@ -188,6 +188,9 @@ _.extend(Component.prototype, {
 
     return this;
   },
+  hasChild: function (name) {
+    return this.children.hasOwnProperty(name);
+  },
   addChild: function (name, childComponent) {
     if (name instanceof Component) {
       // omitted name, generate unique child ID
@@ -197,7 +200,7 @@ _.extend(Component.prototype, {
     name = String(name);
 
     this._requireAlive();
-    if (this.children.hasOwnProperty(name))
+    if (this.hasChild(name))
       throw new Error("Already have a child named: " + name);
 
     if (childComponent.isDestroyed)
@@ -209,6 +212,31 @@ _.extend(Component.prototype, {
 
     childComponent._added(name, this);
   },
+  setChild: function (name, childClass, childArgs) {
+    name = String(name);
+
+    this._requireAlive();
+    if (this.hasChild(name)) {
+      var oldChild = this.children[name];
+      if (oldChild.constructor === childClass) {
+        // old child present with same class
+        oldChild.update(childArgs);
+      } else {
+        var newChild = new childClass(childArgs);
+        if (oldChild.isAttached) {
+          var beforeNode = oldChild.lastNode().nextSibling;
+          var parentNode = oldChild.parentNode();
+          this.removeChild(name);
+          this.addChild(name, newChild);
+          newChild.attach(parentNode, beforeNode);
+        } else {
+          this.addChild(newChild);
+        }
+      }
+    } else {
+      this.addChild(name, new childClass(childArgs));
+    }
+  },
   _added: function (name, parent) {
     name = String(name);
     this.nameInParent = name;
@@ -219,7 +247,7 @@ _.extend(Component.prototype, {
   removeChild: function (name) {
     name = String(name);
     this._requireAlive();
-    if (! this.children.hasOwnProperty(name))
+    if (! this.hasChild(name))
       throw new Error("No such child component: " + name);
 
     var childComponent = this.children[name];
@@ -653,7 +681,7 @@ Each = DebugComponent.extend({
 
 MyLI = DebugComponent.extend({
   init: function () {
-    this.addChild('1', new LI({text: this.args.data.text || ''}));
+    this.setChild('1', LI, {text: this.args.data.text || ''});
   },
   build: function (frag) {
     var c = this.children['1'];
@@ -661,7 +689,7 @@ MyLI = DebugComponent.extend({
     this.setBounds(c);
   },
   updated: function (args, oldArgs) {
-    this.children['1'].update({text: this.args.data.text || ''});
+    this.init(); // XXX not necessarily the right pattern
   },
   toHtml: function () {
     return this.children['1'].toHtml();
