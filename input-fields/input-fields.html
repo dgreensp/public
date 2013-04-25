@@ -7,19 +7,25 @@
 </body>
 
 <template name="main">
+  {{> fields thing}}
+</template>
 
-<div class="formRow">
-<label for="foo" class="formRowLabel">Foo:</label>
-<div class="formRowValue">
-  <input type="text" id="foo">
-</div>
-</div>
+<template name="fields">
 
-<div class="formRow">
-<label for="bar" class="formRowLabel">Bar:</label>
-<div class="formRowValue">
-  <input type="text" id="bar">
-</div>
-</div>
+  <div class="formRow fooField {{fooErrorClass}}">
+    <label for="foo" class="formRowLabel">Foo:</label>
+    <div class="formRowValue fooField">
+      <input type="text" id="fooFieldInput" class="control"
+             value="{{foo}}">
+    </div>
+  </div>
+
+  <div class="formRow barField {{barErrorClass}}">
+    <label for="bar" class="formRowLabel">Bar:</label>
+    <div class="formRowValue barField">
+      <input type="text" id="barFieldInput" class="control"
+             value="{{bar}}">
+    </div>
+  </div>
 
 </template>
