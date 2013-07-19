@@ -1,0 +1,43 @@
+* { padding: 0; border: 0; margin: 0; }
+
+body { background: #ccc; }
+
+#wrapper {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: 100px;
+  height: 100px;
+}
+
+#container {
+  position: relative;
+  
+  width: 1000%;
+  height: 1000%;
+  left: -500%;
+  top: -500%;
+  
+  background: white;
+
+  overflow: hidden;
+}
+
+#board {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.block {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  top: -20px;
+  left: -20px;
+  background: red;
+}
