@@ -1,0 +1,36 @@
+<head>
+  <title>Tests</title>
+</head>
+
+<body>
+  {{> groupNav}}
+  <div>
+    {{> test_group testdata}}
+  </div>
+</body>
+
+<template name="groupNav">
+  <br>
+</template>
+
+<template name="test_group">
+  <div>
+    {{#each groups}}
+      {{> test_group2}}
+    {{/each}}
+  </div>
+</template>
+
+<template name="test_group2">
+  <div>
+    {{#each tests}}
+      {{> test .}}
+    {{/each}}
+  </div>
+</template>
+
+<template name="test">
+  <div>
+    x
+  </div>
+</template>
