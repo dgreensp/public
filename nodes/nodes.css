@@ -1,0 +1,31 @@
+body > small {
+  display: block;
+  margin-top: 8px;
+}
+body > small a {
+  color: #666;
+  font-style: italic;
+}
+
+.node {
+    border: 1px solid #666;
+}
+
+.node .node {
+    margin-left: 30px;
+    margin-top: 10px;
+}
+
+.node h3 {
+    padding: 0;
+    margin: 0.5em;
+}
+
+a.add-child, a.remove-node {
+    color: blue;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid blue;
+    padding: 2px;
+}
+

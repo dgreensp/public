@@ -1,0 +1,28 @@
+<head>
+  <title>nodes</title>
+</head>
+
+<body>
+  {{> nodeTree}}
+  <small><a target="_blank" href="https://github.com/dgreensp/apps/tree/master/nodes">Source</a></small>
+</body>
+
+<template name="nodeTree">
+  {{#with rootNode}}
+    {{> node}}
+  {{else}}
+    <div>Loading...</div>
+  {{/with}}
+</template>
+
+<template name="node">
+  <div class="node">
+    <h3>{{_id}} ({{childCount}}) <a class="add-child">+</a>
+      {{#if isRemovable}}<a class="remove-node">&#8211;</a>{{/if}}</h3>
+    <div class="node-children">
+      {{#each children}}
+        {{> node}}
+      {{/each}}
+    </div>
+  </div>
+</template>
