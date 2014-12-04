@@ -1,0 +1,37 @@
+<head>
+  <title>Image Mage</title>
+</head>
+
+<body>
+  {{> composer}}
+</body>
+
+<template name="composer">
+  <div class="composer {{draggingClass}}">
+    <div class="toppane">
+      {{id}}
+    </div>
+    <div class="patchpane">
+      {{#each patches}}
+        {{> patch}}
+      {{/each}}
+    </div>
+    <div class="bottompane">
+      <a class="addpatch">
+        {{>icon "plus"}}
+      </a>
+    </div>
+  </div>
+</template>
+
+<template name="patch">
+  <div class="patch {{newpatchClass}} {{placeholderClass}}">
+    <div class="draghandle">{{>icon "reorder"}}</div>
+    <div class="title">{{_id}}</div>
+    <a class="removepatch">{{>icon "trash-o"}}</a>
+  </div>
+</template>
+
+<template name="icon">
+  <i class="icon fa {{faClasses .}} fa-fw"></i>
+</template>

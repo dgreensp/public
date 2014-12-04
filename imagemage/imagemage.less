@@ -1,0 +1,127 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+.unselectable() {
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+};
+
+.border-radius (@radius: 5px) {
+    -webkit-border-radius: @radius;
+    -moz-border-radius:    @radius;
+    border-radius:         @radius;
+
+    -moz-background-clip:    padding;
+    -webkit-background-clip: padding-box;
+    background-clip:         padding-box;
+}
+
+.composer {
+    @COMPOSER_WIDTH: 300px;
+    @TOP_PANE_HEIGHT: 40px;
+    @BOTTOM_PANE_HEIGHT: 40px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: @COMPOSER_WIDTH;
+    background: #333;
+    .toppane {
+        position: absolute;
+        top: 0;
+        height: @TOP_PANE_HEIGHT;
+        left: 0;
+        right: 0;
+        background: #555;
+        color: #fff;
+        overflow: hidden;
+    }
+    .patchpane {
+        position: absolute;
+        top: @TOP_PANE_HEIGHT;
+        bottom: @BOTTOM_PANE_HEIGHT;
+        left: 0;
+        right: 0;
+        overflow: auto;
+    }
+    .bottompane {
+        position: absolute;
+        bottom: 0;
+        height: @TOP_PANE_HEIGHT;
+        left: 0;
+        right: 0;
+        background: #555;
+        color: #fff;
+        overflow: hidden;
+    }
+}
+
+a {
+    cursor: pointer;
+    .unselectable();
+}
+.icon {
+    .unselectable();
+}
+
+.composer.dragging {
+  cursor: move;
+}
+
+@PATCH_HEIGHT: 30px;
+
+.patch {
+    height: @PATCH_HEIGHT;
+    background: #ccc;
+    transition: background-color 0.5s;
+    position: relative;
+    .border-radius(5px);
+    border-bottom: 1px solid transparent;
+    &.newpatch {
+        background: yellow;
+    }
+    .draghandle {
+        cursor: move;
+        position: absolute;
+        height: @PATCH_HEIGHT;
+        width: @PATCH_HEIGHT;
+        line-height: @PATCH_HEIGHT;
+        text-align: center;
+        vertical-align: middle;
+        top: 0;
+        left: 0;
+    }
+    &.placeholder {
+      opacity: 0.5;
+    }
+    .removepatch {
+        display: block;
+        position: absolute;
+        height: @PATCH_HEIGHT;
+        width: @PATCH_HEIGHT;
+        line-height: @PATCH_HEIGHT;
+        text-align: center;
+        vertical-align: middle;
+        top: 0;
+        right: 0;
+    }
+    .title {
+        line-height: @PATCH_HEIGHT;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: @PATCH_HEIGHT;
+        right: @PATCH_HEIGHT;
+        overflow: hidden;
+     }
+}
