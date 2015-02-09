@@ -1,0 +1,58 @@
+<head>
+  <title>jpeg</title>
+</head>
+
+<body>
+  {{#if IMAGE}}
+    <div class="parts">
+      {{#each parsedImage}}
+        {{> Template.dynamic template=typeName}}
+      {{/each}}
+    </div>
+  {{/if}}
+</body>
+
+<template name="Hex">
+  <div class="type-hex">
+    {{> hexdump data}}
+  </div>
+</template>
+
+<template name="hexdump">
+  <div class="hexdump">
+    <pre>{{dump}}</pre>
+  </div>
+</template>
+
+<template name="Marker">
+  <div class="type-marker">
+    <pre>{{name}} Marker</pre>
+  </div>
+</template>
+
+<template name="Segment">
+  <div class="type-segment">
+    <pre>{{marker.name}} Segment</pre>
+    {{> Template.dynamic template=params.typeName data=params}}
+  </div>
+</template>
+
+<template name="CodedData">
+  <div class="type-coded-data">
+    {{> hexdump data}}
+  </div>
+</template>
+
+<template name="HexParams">
+  <div class="params-hex">
+    {{> hexdump data}}
+  </div>
+</template>
+
+<template name="DQTParams">
+  <div class="params-dqt">
+    {{#each tables}}
+      <div>#{{num}} - {{elementsString}}</div>
+    {{/each}}
+  </div>
+</template>

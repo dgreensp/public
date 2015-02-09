@@ -16,7 +16,7 @@ html, body {
     user-select: none;
 };
 
-.border-radius (@radius: 5px) {
+/*.border-radius (@radius: 5px) {
     -webkit-border-radius: @radius;
     -moz-border-radius:    @radius;
     border-radius:         @radius;
@@ -24,7 +24,7 @@ html, body {
     -moz-background-clip:    padding;
     -webkit-background-clip: padding-box;
     background-clip:         padding-box;
-}
+}*/
 
 .composer {
     @COMPOSER_WIDTH: 300px;
@@ -85,8 +85,7 @@ a {
     background: #ccc;
     transition: background-color 0.5s;
     position: relative;
-    .border-radius(5px);
-    border-bottom: 1px solid transparent;
+    border-bottom: 1px solid #444;
     &.newpatch {
         background: yellow;
     }
@@ -102,6 +101,7 @@ a {
         left: 0;
     }
     &.placeholder {
+      background: #eee;
       opacity: 0.5;
     }
     .removepatch {

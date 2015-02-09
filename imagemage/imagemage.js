@@ -91,6 +91,7 @@ if (Meteor.isClient) {
         var newPatch = _.clone(oldPatch);
         var k = _.indexOf(oldPatches, oldPatch);
         newPatches.splice(k, 1); // delete oldPatch
+        newIndex = Math.max(0, Math.min(newPatches.length, newIndex));
         newPatches.splice(newIndex, 0, newPatch); // insert newPatch
         if (usePlaceholder) {
           newPatch._placeholder = true;
