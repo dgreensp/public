@@ -2,7 +2,7 @@
 
 ## Heading
 
-#### Logic.isTerm(value)
+##### Logic.isTerm(value)
 
 ###### Parameters
 
