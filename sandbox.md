@@ -4,10 +4,12 @@
 
 #### Logic.isTerm
 
+###### Methods
+
 `Logic.isTerm(value)`
 
 ###### Parameters
 
 * `value` - Any
 
-Returns: Boolean
+**Returns:** Boolean
