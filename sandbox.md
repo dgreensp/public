@@ -2,7 +2,12 @@
 
 ## Heading
 
-#### Logic.isTerm(value)<a name="logic-isterm"></a>
+#### Logic.isTerm
+
 `Logic.isTerm(value)`
 
-Blah blah blah.
+###### Parameters
+
+* `value` - Any
+
+Returns: Boolean
