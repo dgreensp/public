@@ -11,3 +11,5 @@
 ###### Returns
 
 Boolean
+
+[MiniSat](http://minisat.se/)
