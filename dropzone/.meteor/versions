@@ -30,6 +30,7 @@ insecure@1.0.4-plugins.0
 jquery@1.11.3-plugins.0_3
 json@1.0.4-plugins.0
 launch-screen@1.0.3-plugins.0
+less@2.5.0-plugins.0_2
 livedata@1.0.14-plugins.0
 logging@1.0.8-plugins.0
 meteor@1.1.7-plugins.1

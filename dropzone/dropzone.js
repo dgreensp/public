@@ -81,6 +81,16 @@ function sha256(data) {
   });
 }
 
+function blobFromData(data) {
+  // The ArrayBuffers used to make a Blob can't be too big, so slice up `data`.
+  const slices = [];
+  const sliceSize = 1000000;
+  for (let sliceStart = 0; sliceStart < data.length; sliceStart += sliceSize) {
+    slices.push(data.subarray(sliceStart, sliceStart + sliceSize));
+  }
+  return new Blob(slices);
+}
+
 if (Meteor.isClient) {
 
   Meteor.startup(() => {
@@ -94,12 +104,9 @@ if (Meteor.isClient) {
 
       const T = Date.now();
       resolveEntries(droppedEntries).then((entries) => {
-        console.log("Resolved in", Date.now() - T, "ms");
-        const T2 = Date.now();
+//        console.log("Resolved in", Date.now() - T, "ms");
+//        const T2 = Date.now();
 
-//        readBlob(entries[0].children[9].blob).then(function (buf) {
-//          debugger;
-        //        });
         function countFiles(array) {
           let total = 0;
           array.forEach((entry) => {
@@ -114,25 +121,78 @@ if (Meteor.isClient) {
           return total;
         }
 
-        console.log("Total number of files:", countFiles(entries));
-        console.log("Counted in", Date.now() - T2, "ms");
+//        console.log("Total number of files:", countFiles(entries));
+//        console.log("Counted in", Date.now() - T2, "ms");
 
         if (entries.length === 1 && entries[0].isFile) {
-          const f = entries[0].blob;
-          console.log(`Taking SHA-256 of ${f.size} byte file...`);
-          const T3 = Date.now();
-          let T4;
-          readBlob(f).then((data) => {
-            console.log(`Reading took ${Date.now() - T3} ms`);
-            T4 = Date.now();
-            return sha256(data);
-          }).then((digest) => {
-            console.log(digest);
-            console.log(`Digest took ${Date.now() - T4} ms`);
-          });
-        }
+          if (entries[0].name.slice(-4) === '.mp4') {
+            // VIDEO
+            const v = $("#thevideo")[0];
+            if (v.src.slice(0, 5) === 'blob:') {
+              URL.revokeObjectURL(v.src);
+              v.src = '';
+            }
+            const f = entries[0].blob;
+            readBlob(f).then((data) => {
+              v.src = URL.createObjectURL(blobFromData(data));
+            });
+            //v.src = URL.createObjectURL(f);
+          } else {
+            const f = entries[0].blob;
+            console.log(`Taking SHA-256 of ${f.size} byte file...`);
+            const T3 = Date.now();
+            let T4;
+            readBlob(f).then((data) => {
+              console.log(`Reading took ${Date.now() - T3} ms`);
+              T4 = Date.now();
+              return sha256(data);
+            }).then((digest) => {
+              console.log(digest);
+              console.log(`Digest took ${Date.now() - T4} ms`);
+            });
+          }
+         }
       });
 
+    });
+
+    const FRAME_RATE = 25;
+    function snapToFrame(t) {
+      return Math.round(t*FRAME_RATE)/FRAME_RATE;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      function getIncrement() {
+        if (e.shiftKey && e.altKey) return 60;
+        else if (e.shiftKey) return 15;
+        else if (e.altKey) return 1./FRAME_RATE;
+        else return 5;
+      }
+      const key = e.keyCode;
+      const V = $("#thevideo")[0];
+      if (key === 37) { // LEFT
+        V.currentTime = snapToFrame(V.currentTime - getIncrement());
+      } else if (key === 39) { // RIGHT
+        V.currentTime = snapToFrame(V.currentTime + getIncrement());
+      } else if (key === 32) { // SPACE
+        if (V.paused) V.play();
+        else V.pause();
+      } else if (key === 65) { // A
+        V.playbackRate *= 0.5;
+      } else if (key === 83) { // S
+        V.playbackRate = 1;
+      } else if (key === 68) { // D
+        V.playbackRate *= 2;
+      } else if (key === 70) { // F
+        if (document.webkitFullscreenElement) {
+          V.webkitExitFullscreen();
+        } else {
+          V.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+        }
+      } else {
+        return;
+      }
+      e.preventDefault();
     });
   });
 
