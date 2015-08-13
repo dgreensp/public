@@ -98,6 +98,7 @@ if (Meteor.isClient) {
       URL.revokeObjectURL(v.src);
     }
     v.src = '';
+    Session.set('selectedFile', null);
   }
 
   Meteor.startup(() => {
@@ -192,9 +193,10 @@ if (Meteor.isClient) {
         V.playbackRate *= 2;
       } else if (key === ch('F')) {
         if (document.webkitFullscreenElement) {
-          V.webkitExitFullscreen();
+          document.webkitExitFullscreen();
         } else {
-          V.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+          document.documentElement.webkitRequestFullscreen(
+            Element.ALLOW_KEYBOARD_INPUT);
         }
       } else if (key === ch('Z')) {
         Session.set('hideList',
@@ -248,7 +250,16 @@ if (Meteor.isClient) {
 
   Template.body.helpers({
     bucket() { return Session.get('bucket'); },
-    hideList() { return Session.get('hideList'); }
+    hideList() { return Session.get('hideList'); },
+    maybeSelected() {
+      const selectedFile = Session.get('selectedFile');
+      if (! selectedFile) return '';
+      const {fileName, src} = selectedFile;
+      const v = $("#thevideo")[0];
+      return (this.name === fileName &&
+              v && v.src === src) ?
+        'selected' : '';
+    }
   });
 
   function selectFile(fileName) {
@@ -259,6 +270,7 @@ if (Meteor.isClient) {
     clearVid(v);
     v.src =
       `http://${bucketName}.s3.amazonaws.com/${filePath}`;
+    Session.set('selectedFile', { fileName, src: v.src });
     v.play();
   }
 

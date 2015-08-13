@@ -8,9 +8,24 @@
     {{#with bucket}}
       <div id="bucketmenu">
         {{#each files}}
-          <div class="file">{{name}}</div>
+          <div class="file {{maybeSelected}}">{{name}}</div>
         {{/each}}
       </div>
-    {{/with}}
+      {{/with}}
+      <div id="keyshortcuts">
+        <div><span>Z</span> - Toggle Menu</div>
+        <div><span>Space</span> - Play/Pause</div>
+        <div><span>F</span> - Toggle fullscreen mode</div>
+        <div><span>&#8592;/&#8594;</span> - Seek 5 secs</div>
+        <div><span>Shift &#8592;/&#8594;</span> - Seek 15 secs</div>
+        <div><span>Option-Shift &#8592;/&#8594;</span> - Seek 15 secs</div>
+        <div><span>M</span> - Seek to midpoint</div>
+        <div><span>R</span> - Seek to random time</div>
+        <div><span>Shift-R</span> - Seek to random clip and time</div>
+        <div><span>A</span> - Slower speed (0.5x)</div>
+        <div><span>S</span> - Normal speed</div>
+        <div><span>D</span> - Faster speed (2x)</div>
+        <div><span>K</span> - Close video</div>
+      </div>
   {{/unless}}
 </body>
