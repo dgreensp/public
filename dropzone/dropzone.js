@@ -166,6 +166,9 @@ if (Meteor.isClient) {
     }
 
     document.addEventListener('keydown', (e) => {
+      function ch(c) {
+        return c.charCodeAt(0);
+      }
       function getIncrement() {
         if (e.shiftKey && e.altKey) return 60;
         else if (e.shiftKey) return 15;
@@ -178,26 +181,30 @@ if (Meteor.isClient) {
         V.currentTime = snapToFrame(V.currentTime - getIncrement());
       } else if (key === 39) { // RIGHT
         V.currentTime = snapToFrame(V.currentTime + getIncrement());
-      } else if (key === 32) { // SPACE
+      } else if (key === ch(' ')) {
         if (V.paused) V.play();
         else V.pause();
-      } else if (key === 65) { // A
+      } else if (key === ch('A')) {
         V.playbackRate *= 0.5;
-      } else if (key === 83) { // S
+      } else if (key === ch('S')) {
         V.playbackRate = 1;
-      } else if (key === 68) { // D
+      } else if (key === ch('D')) {
         V.playbackRate *= 2;
-      } else if (key === 70) { // F
+      } else if (key === ch('F')) {
         if (document.webkitFullscreenElement) {
           V.webkitExitFullscreen();
         } else {
           V.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
         }
-      } else if (key === 90) { // Z
+      } else if (key === ch('Z')) {
         Session.set('hideList',
                     ! Session.get('hideList'));
-      } else if (key === 77) { // M
+      } else if (key === ch('M')) {
         V.currentTime = snapToFrame(V.duration * 0.5);
+      } else if (key === ch('K')) {
+        clearVid(V);
+      } else if (key === ch('R')) {
+        V.currentTime = snapToFrame(V.duration * Math.random());
       } else {
         return;
       }
