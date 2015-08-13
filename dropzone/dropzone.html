@@ -4,4 +4,13 @@
 
 <body>
   <video id="thevideo" controls></video>
+  {{#unless hideList}}
+    {{#with bucket}}
+      <div id="bucketmenu">
+        {{#each files}}
+          <div class="file">{{name}}</div>
+        {{/each}}
+      </div>
+    {{/with}}
+  {{/unless}}
 </body>

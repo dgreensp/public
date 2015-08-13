@@ -93,6 +93,13 @@ function blobFromData(data) {
 
 if (Meteor.isClient) {
 
+  function clearVid(v) {
+    if (v.src.slice(0, 5) === 'blob:') {
+      URL.revokeObjectURL(v.src);
+    }
+    v.src = '';
+  }
+
   Meteor.startup(() => {
     document.addEventListener('dragover', e => e.preventDefault());
     document.addEventListener('dragenter', e => e.preventDefault());
@@ -128,10 +135,7 @@ if (Meteor.isClient) {
           if (entries[0].name.slice(-4) === '.mp4') {
             // VIDEO
             const v = $("#thevideo")[0];
-            if (v.src.slice(0, 5) === 'blob:') {
-              URL.revokeObjectURL(v.src);
-              v.src = '';
-            }
+            clearVid(v);
             const f = entries[0].blob;
             readBlob(f).then((data) => {
               v.src = URL.createObjectURL(blobFromData(data));
@@ -189,13 +193,50 @@ if (Meteor.isClient) {
         } else {
           V.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
         }
+      } else if (key === 90) { // Z
+        Session.set('hideList',
+                    ! Session.get('hideList'));
+      } else if (key === 77) { // M
+        V.currentTime = snapToFrame(V.duration * 0.5);
       } else {
         return;
       }
       e.preventDefault();
     });
+
+    if (window.location.hash) {
+      const bucket = window.location.hash.slice(1);
+      HTTP.get(`http://${bucket}.s3.amazonaws.com/`, (e, res) => {
+        if (e) throw e;
+        const files =
+                res.content.match(/<Key>.*?(?=<\/Key>)/g).map(
+                  s => ({name: deXML(s.slice(5))}));
+        Session.set('bucket', { name: bucket, files });
+      });
+    }
   });
 
+  function deXML(s) {
+    return s.replace(/&amp;/g, '&');
+  }
+
+  Template.body.helpers({
+    bucket() { return Session.get('bucket'); },
+    hideList() { return Session.get('hideList'); }
+  });
+
+  Template.body.events({
+    'mousedown .file'(evt) {
+      Session.set('hideList', true);
+      const bucketName = Session.get('bucket').name;
+      const fileName = encodeURIComponent(this.name);
+      const v = $("#thevideo")[0];
+      clearVid(v);
+      v.src =
+        `http://${bucketName}.s3.amazonaws.com/${fileName}`;
+      v.play();
+    }
+  });
 }
 
 if (Meteor.isServer) {
