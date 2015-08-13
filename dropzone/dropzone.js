@@ -204,7 +204,26 @@ if (Meteor.isClient) {
       } else if (key === ch('K')) {
         clearVid(V);
       } else if (key === ch('R')) {
-        V.currentTime = snapToFrame(V.duration * Math.random());
+        if (e.shiftKey) {
+          const bucket = Session.get('bucket');
+          if (bucket) {
+            selectFile(_.sample(bucket.files).name);
+            if (! isNaN(V.duration)) {
+              seekToRandom();
+            } else {
+              function f() {
+                V.removeEventListener('durationchange', f);
+                seekToRandom();
+              }
+              V.addEventListener('durationchange', f);
+            }
+          }
+        } else {
+          seekToRandom();
+        }
+        function seekToRandom() {
+          V.currentTime = snapToFrame(V.duration * Math.random());
+        }
       } else {
         return;
       }
@@ -232,16 +251,20 @@ if (Meteor.isClient) {
     hideList() { return Session.get('hideList'); }
   });
 
+  function selectFile(fileName) {
+    Session.set('hideList', true);
+    const bucketName = Session.get('bucket').name;
+    const filePath = encodeURIComponent(fileName);
+    const v = $("#thevideo")[0];
+    clearVid(v);
+    v.src =
+      `http://${bucketName}.s3.amazonaws.com/${filePath}`;
+    v.play();
+  }
+
   Template.body.events({
     'mousedown .file'(evt) {
-      Session.set('hideList', true);
-      const bucketName = Session.get('bucket').name;
-      const fileName = encodeURIComponent(this.name);
-      const v = $("#thevideo")[0];
-      clearVid(v);
-      v.src =
-        `http://${bucketName}.s3.amazonaws.com/${fileName}`;
-      v.play();
+      selectFile(this.name);
     }
   });
 }
