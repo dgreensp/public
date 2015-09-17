@@ -1,0 +1,17 @@
+<head>
+  <title>gggit</title>
+</head>
+
+<body>
+  <h1>Welcome to Meteor!</h1>
+
+  {{> loginButtons}}
+
+  {{> userinfo}}
+</body>
+
+<template name="userinfo">
+  <div>Client user: {{clientUser}}</div>
+
+  <div>Server user: {{serverUser}}</div>
+</template>
