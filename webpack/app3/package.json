@@ -1,0 +1,10 @@
+{
+  "name": "app3",
+  "version": "1.0.0",
+  "description": "",
+  "author": "David Greenspan <dgreenspan@alum.mit.edu>",
+  "devDependencies": {
+    "babel-loader": "^5.3.2"
+  },
+  "private": true
+}
