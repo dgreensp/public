@@ -1,0 +1,12 @@
+{
+  "name": "app3",
+  "version": "1.0.0",
+  "description": "",
+  "author": "David Greenspan <dgreenspan@alum.mit.edu>",
+  "private": true,
+  "dependencies": {
+    "continuation-local-storage": "~3",
+    "express": "^4.13.3",
+    "request-promise": "^1.0.2"
+  }
+}
