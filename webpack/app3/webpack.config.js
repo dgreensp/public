@@ -1,7 +1,7 @@
 
 module.exports = {
   entry: {
-    blah: ['./src/main.js']
+    bundle: ['./src/main.js']
   },
   output: {
     path: __dirname + '/out',
@@ -16,5 +16,8 @@ module.exports = {
         externalHelpers: true
       }
     }]
+  },
+  devServer: {
+    contentBase: './public/'
   }
 };
