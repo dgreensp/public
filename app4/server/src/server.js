@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
 <body>
   ${ReactDOMServer.renderToString(<p>Hi everyone...</p>)}
 
-  <script src="/test.js"></script>
+  <script src="/client.js"></script>
 </body>
 </html>
 `);
