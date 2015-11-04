@@ -1,1 +1,3 @@
-console.log(Object.entries({y:2}));
+import "./test.less";
+
+console.log(Object.entries({y:4}));
