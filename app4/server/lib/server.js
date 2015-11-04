@@ -10,6 +10,10 @@ var _express = require("express");
 
 var _express2 = _interopRequireDefault(_express);
 
+var _compression = require("compression");
+
+var _compression2 = _interopRequireDefault(_compression);
+
 var _requestPromise = require("request-promise");
 
 var _requestPromise2 = _interopRequireDefault(_requestPromise);
@@ -56,13 +60,14 @@ var JSONView = (function (_React$Component) {
 })(_react2.default.Component);
 
 var app = _express2.default();
+app.use(_compression2.default());
 
 app.get('/', function (req, res) {
   res.send("\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>app4</title>\n</head>\n<body>\n  " + _reactDomServer2.default.renderToString(_react2.default.createElement(
     "p",
     null,
     "Hi everyone..."
-  )) + "\n\n  <script src=\"/client.js\"></script>\n</body>\n</html>\n");
+  )) + "\n\n  <div id=\"mycontainer\"></div>\n\n  <script src=\"/client.js\"></script>\n</body>\n</html>\n");
 });
 
 app.get('/apitest', function (req, res, next) {

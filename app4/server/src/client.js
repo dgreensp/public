@@ -1,3 +1,5 @@
 import "./test.less";
+import React from "react";
+import ReactDOM from "react-dom";
 
-console.log(Object.entries({y:4}));
+ReactDOM.render(<span>WOW</span>, document.getElementById("mycontainer"));

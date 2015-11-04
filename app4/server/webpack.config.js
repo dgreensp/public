@@ -1,9 +1,12 @@
+var webpack = require('webpack');
 var path = require('path');
 var babelOpts = require('./package.json').babel;
 
 function resolve(p) {
   return path.resolve(__dirname, p);
 }
+
+var isProduction = false;
 
 module.exports = {
   entry: {
@@ -12,7 +15,7 @@ module.exports = {
   output: {
     path: resolve('./public'),
     filename: '[name].js',
-    pathinfo: true
+    pathinfo: !isProduction
   },
   module: {
     loaders: [
@@ -34,5 +37,18 @@ module.exports = {
   },
   devServer: {
     contentBase: './public/'
-  }
+  },
+  plugins: [].concat(isProduction ? [
+    new webpack.DefinePlugin({
+      'process.env': {
+        // for React
+        'NODE_ENV': JSON.stringify('production')
+      }
+    }),
+    new webpack.optimize.UglifyJsPlugin({
+      compress: {
+        warnings: false
+      }
+    })
+  ] : [])
 };

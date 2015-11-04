@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import request from "request-promise";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
@@ -18,6 +19,7 @@ class JSONView extends React.Component {
 }
 
 const app = express();
+app.use(compression());
 
 app.get('/', (req, res) => {
   res.send(`
@@ -29,6 +31,8 @@ app.get('/', (req, res) => {
 </head>
 <body>
   ${ReactDOMServer.renderToString(<p>Hi everyone...</p>)}
+
+  <div id="mycontainer"></div>
 
   <script src="/client.js"></script>
 </body>
