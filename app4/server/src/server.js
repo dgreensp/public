@@ -4,61 +4,61 @@ import request from "request-promise";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
 
-class JSONView extends React.Component {
-  render() {
-    const value = this.props.data;
-    if (typeof value === 'object') {
-      return <div className="json-object">
-        {Object.entries(value).map(
-          ([k,v]) => <div className="json-object-entry">
-            {k} {typeof v}
-            </div>)}
-      </div>;
-    }
-  }
-}
+import Wow from "./Wow";
 
 const app = express();
 app.use(compression());
+app.use(express.static('built'));
+setUpRoutes();
 
-app.get('/', (req, res) => {
-  res.send(`
+function genericPage({body='', title='Untitled', scripts=[], styles=[]}) {
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>app4</title>
+  <title>${title}</title>
+  ${styles.map(u => `<link rel="stylesheet" type="text/css" href="${u}">`)}
 </head>
 <body>
-  ${ReactDOMServer.renderToString(<p>Hi everyone...</p>)}
-
-  <div id="mycontainer"></div>
-
-  <script src="/client.js"></script>
+${body}
+${scripts.map(u => `<script src="${u}"></script>`).join('\n')}
 </body>
-</html>
-`);
-});
+</html>`;
+}
 
-app.get('/apitest', (req, res, next) => {
-  request({
-    uri: 'https://api.github.com/repos/meteor/meteor/git/commits/90e5d3ea739834fca9937bea0935590215eefa85',
-    qs: {
-      access_token: '9968a96970c44765d175c5a12280d63ca5ff4e7b'
-    },
-    json: true,
-    headers: {
-      'User-Agent': 'dgreensp GitScope'
-    },
-    resolveWithFullResponse: true
-  }).catch((error) => {
-    res.json({error});
-  }).then((response) => {
-    res.send(ReactDOMServer.renderToString(<JSONView data={response}/>));
-  }).catch(next);
-});
+function setUpRoutes() {
 
-app.use(express.static('public'));
+  app.get('/', (req, res) => {
+    res.send(genericPage({
+      title: 'app4',
+      body: `
+  ${ReactDOMServer.renderToString(<p>Hi <Wow/> everyone...</p>)}
+
+  <div id="mycontainer"></div>`,
+      scripts: ['/client.js'],
+      styles: ['/client.css']
+    }));
+  });
+
+  app.get('/apitest', (req, res, next) => {
+    request({
+      uri: 'https://api.github.com/repos/meteor/meteor/git/commits/90e5d3ea739834fca9937bea0935590215eefa85',
+      qs: {
+        access_token: '9968a96970c44765d175c5a12280d63ca5ff4e7b'
+      },
+      json: true,
+      headers: {
+        'User-Agent': 'dgreensp GitScope'
+      },
+      resolveWithFullResponse: true
+    }).catch((error) => {
+      res.json({error});
+    }).then((response) => {
+      res.send(ReactDOMServer.renderToString(<JSONView data={response}/>));
+    }).catch(next);
+  });
+}
 
 var server = app.listen(3000, function () {
   var host = server.address().address;

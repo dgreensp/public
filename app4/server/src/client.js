@@ -1,5 +1,5 @@
-import "./test.less";
 import React from "react";
 import ReactDOM from "react-dom";
+import Wow from "./Wow";
 
-ReactDOM.render(<span>WOW</span>, document.getElementById("mycontainer"));
+ReactDOM.render(<Wow/>, document.getElementById("mycontainer"));

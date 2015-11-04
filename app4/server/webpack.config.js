@@ -1,4 +1,5 @@
 var webpack = require('webpack');
+var ExtractTextPlugin = require("extract-text-webpack-plugin");
 var path = require('path');
 var babelOpts = require('./package.json').babel;
 
@@ -13,7 +14,7 @@ module.exports = {
     client: ['./src/client.js']
   },
   output: {
-    path: resolve('./public'),
+    path: resolve('./built'),
     filename: '[name].js',
     pathinfo: !isProduction
   },
@@ -31,14 +32,13 @@ module.exports = {
       },
       {
         test: /\.less$/,
-        loader: 'style!css!less'
+        loader: ExtractTextPlugin.extract('style-loader', 'css-loader!less-loader')
       }
     ]
   },
-  devServer: {
-    contentBase: './public/'
-  },
-  plugins: [].concat(isProduction ? [
+  plugins: [
+    new ExtractTextPlugin("[name].css")
+  ].concat(isProduction ? [
     new webpack.DefinePlugin({
       'process.env': {
         // for React
