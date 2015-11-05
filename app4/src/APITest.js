@@ -1,8 +1,13 @@
 import React from "react";
 import "./APITest.less";
 
-//export default class Wow extends React.Component {
-//  render() {
-//    return <span className="Wow-span">WOW</span>;
-//  }
-//};
+export default class APITest extends React.Component {
+  render() {
+    return <div>{JSON.stringify(this.props)}</div>;
+  }
+};
+
+APITest.propTypes = {
+  response: React.PropTypes.object,
+  error: React.PropTypes.object
+};

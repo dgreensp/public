@@ -1,9 +1,9 @@
 import express from "express";
 import compression from "compression";
-import request from "request-promise";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
 
+import GitHubClient from "./GitHubClient";
 import Wow from "./Wow";
 
 const app = express();
@@ -48,13 +48,21 @@ function pageForComponent(componentName, {props = null} = {}) {
   });
 }
 
+const gh = new GitHubClient({
+  accessToken: '9968a96970c44765d175c5a12280d63ca5ff4e7b',
+  userAgent: 'dgreensp GitScope'
+});
+
 function setUpRoutes() {
 
   app.get('/Wow', (req, res) => {
     res.send(pageForComponent('Wow', {props:{text:'HOORAY'}}));
   });
-  app.get('/APITest', (req, res) => {
-    res.send(pageForComponent('APITest'));
+
+  app.get('/APITest', (req, res, next) => {
+    gh.getRaw('/repos/meteor/meteor/git/commits/90e5d3ea739834fca9937bea0935590215eefa85').then(result => {
+      res.send(pageForComponent('APITest', {props:{...result}}));
+    }).catch(next);
   });
 
   /*  app.get('/', (req, res) => {
@@ -69,7 +77,7 @@ function setUpRoutes() {
     }));
   });*/
 
-  app.get('/apitest', (req, res, next) => {
+/*  app.get('/apitest', (req, res, next) => {
     request({
       uri: 'https://api.github.com/repos/meteor/meteor/git/commits/90e5d3ea739834fca9937bea0935590215eefa85',
       qs: {
@@ -85,7 +93,7 @@ function setUpRoutes() {
     }).then((response) => {
       res.send(ReactDOMServer.renderToString(<JSONView data={response}/>));
     }).catch(next);
-  });
+  });*/
 }
 
 const server = app.listen(3000, function () {
