@@ -10,4 +10,4 @@ export default class Wow extends React.Component {
       {this.props.text}
     </span>;
   }
-};
+}

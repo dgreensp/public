@@ -26,4 +26,4 @@ export default class GitHubClient {
       resolveWithFullResponse: true
     }).catch(error => ({error})).then(response => ({response}));
   }
-};
+}
