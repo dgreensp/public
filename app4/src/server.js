@@ -41,7 +41,7 @@ function pageForComponent(componentName) {
 function setUpRoutes() {
 
   app.get('/Wow', (req, res) => {
-    app.send(pageForComponent('Wow'));
+    res.send(pageForComponent('Wow'));
   });
 
   /*  app.get('/', (req, res) => {
