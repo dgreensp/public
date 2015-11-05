@@ -22,18 +22,28 @@ function genericPage({body='', title='Untitled', scripts=[], styles=[]}) {
 </head>
 <body>
 ${body}
-${scripts.map(u => `<script src="${u}"></script>`).join('\n')}
+${scripts.map(script => {
+if (typeof script === 'string') {
+return `<script src="${script}"></script>`;
+} else { // { inline: '...' }
+return `<script>${script.inline}</script>`;
+}
+}).join('\n')}
 </body>
 </html>`;
 }
 
-function pageForComponent(componentName) {
+function pageForComponent(componentName, {props = null} = {}) {
   const comp = module.require('./' + componentName).default;
-  const markup = ReactDOMServer.renderToString(React.createElement(comp, null));
+  const markup = ReactDOMServer.renderToString(React.createElement(comp, props));
   return genericPage({
     body: `<div id="page">${markup}</div>`,
     title: componentName,
-    scripts: [`/${componentName}.js`],
+    scripts: [
+      `/${componentName}.js`,
+      { inline: `WEBPACK.ComponentPage.initPage(${JSON.stringify(componentName)},
+ ${JSON.stringify({props})});` }
+    ],
     styles: [`/${componentName}.css`]
   });
 }
@@ -41,7 +51,10 @@ function pageForComponent(componentName) {
 function setUpRoutes() {
 
   app.get('/Wow', (req, res) => {
-    res.send(pageForComponent('Wow'));
+    res.send(pageForComponent('Wow', {props:{text:'HOORAY'}}));
+  });
+  app.get('/APITest', (req, res) => {
+    res.send(pageForComponent('APITest'));
   });
 
   /*  app.get('/', (req, res) => {

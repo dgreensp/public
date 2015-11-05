@@ -12,14 +12,20 @@ function resolve(p) {
 
 var isProduction = false;
 
+function pageChunk(comp) {
+  return ['./src/component-page.js', `./src/${comp}.js`];
+}
+
 module.exports = {
   entry: {
-    //client: ['./src/client.js']
-    Wow: ['./src/Wow.js']
+    Wow: pageChunk('Wow'),
+    APITest: pageChunk('APITest')
   },
   output: {
     path: resolve('./built'),
     filename: '[name].js',
+    library: ['WEBPACK', '[name]'],
+    libraryTarget: 'this',
     pathinfo: !isProduction
   },
   module: {
