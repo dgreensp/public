@@ -27,9 +27,24 @@ ${scripts.map(u => `<script src="${u}"></script>`).join('\n')}
 </html>`;
 }
 
+function pageForComponent(componentName) {
+  const comp = module.require('./' + componentName).default;
+  const markup = ReactDOMServer.renderToString(React.createElement(comp, null));
+  return genericPage({
+    body: `<div id="page">${markup}</div>`,
+    title: componentName,
+    scripts: [`/${componentName}.js`],
+    styles: [`/${componentName}.css`]
+  });
+}
+
 function setUpRoutes() {
 
-  app.get('/', (req, res) => {
+  app.get('/Wow', (req, res) => {
+    app.send(pageForComponent('Wow'));
+  });
+
+  /*  app.get('/', (req, res) => {
     res.send(genericPage({
       title: 'app4',
       body: `
@@ -39,7 +54,7 @@ function setUpRoutes() {
       scripts: ['/client.js'],
       styles: ['/client.css']
     }));
-  });
+  });*/
 
   app.get('/apitest', (req, res, next) => {
     request({
@@ -60,9 +75,9 @@ function setUpRoutes() {
   });
 }
 
-var server = app.listen(3000, function () {
-  var host = server.address().address;
-  var port = server.address().port;
+const server = app.listen(3000, function () {
+  const host = server.address().address;
+  const port = server.address().port;
 
   console.log('Example app listening at http://%s:%s', host, port);
 });

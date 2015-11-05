@@ -28,6 +28,7 @@
     "compact": false,
     "sourceMaps": true,
     "ast": false,
+    "modules": "babel5-commonjs-sixlike",
     "loose": [
       "all"
     ],

@@ -11,7 +11,8 @@ var isProduction = false;
 
 module.exports = {
   entry: {
-    client: ['./src/client.js']
+    //client: ['./src/client.js']
+    Wow: ['./src/Wow.js']
   },
   output: {
     path: resolve('./built'),
