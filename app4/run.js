@@ -4,6 +4,8 @@ var fs = require('fs');
 var spawn = require('child_process').spawn;
 var webpack = require('webpack');
 var optimist = require('optimist');
+var replaceStream = require('replacestream');
+
 var webpackConfig = require('./webpack.config.js');
 
 var optsParser = optimist.boolean("watch").alias("watch", "w").describe("watch");
@@ -25,8 +27,9 @@ if (opts.watch) {
   babelArgs += ' -w';
 }
 var babelProc = spawn('babel', babelArgs.split(' '));
-babelProc.stdout.pipe(process.stdout);
-babelProc.stderr.pipe(process.stderr);
+var babelSilence = replaceStream(/\[BABEL\].*Custom module formatters are deprecated.*\n/g, '');
+babelProc.stdout.pipe(babelSilence).pipe(process.stdout);
+babelProc.stderr.pipe(babelSilence).pipe(process.stderr);
 
 var lastHash = null;
 function handleWebpackResult(err, stats) {

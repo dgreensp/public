@@ -3,6 +3,9 @@ var ExtractTextPlugin = require("extract-text-webpack-plugin");
 var path = require('path');
 var babelOpts = require('./package.json').babel;
 
+// silence Babel deprecation warning about custom formatters
+require('babel-core/lib/transformation/file/logger').prototype.deprecate = function () {};
+
 function resolve(p) {
   return path.resolve(__dirname, p);
 }
