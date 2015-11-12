@@ -3,7 +3,10 @@ import "./APITest.less";
 
 export default class APITest extends React.Component {
   render() {
-    return <div>{JSON.stringify(this.props)}</div>;
+    return <div>
+      <div>{String(this.props.response && this.props.response.body.length)}</div>
+      <div>{JSON.stringify(this.props)}</div>
+      </div>;
   }
 }
 

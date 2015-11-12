@@ -2,8 +2,10 @@ import express from "express";
 import compression from "compression";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
+import bodyParser from "body-parser";
 
 import GitHubClient from "./GitHubClient";
+import {getDiscovery, getPack} from "./GitClient";
 import Wow from "./Wow";
 
 const app = express();
@@ -60,10 +62,33 @@ function setUpRoutes() {
   });
 
   app.get('/APITest', (req, res, next) => {
-    gh.getRaw('/repos/meteor/meteor/git/commits/90e5d3ea739834fca9937bea0935590215eefa85').then(result => {
+    gh.getRaw('/repos/meteor/meteor/commits?per_page=200').then(result => {
       res.send(pageForComponent('APITest', {props:{...result}}));
     }).catch(next);
   });
+
+  app.get('/FetchTest', (req, res, next) => {
+    getPack().then(result => {
+      res.send(`${result.length}`);
+    }).catch(next);
+  });
+
+  app.get('/heehee/info/refs', (req, res) => {
+    res.setHeader('Content-Type', 'application/x-git-upload-pack-advertisement');
+    res.send(new Buffer(`001e# service=git-upload-pack
+000000e79740c232c1b0c4a6358651bc632a21e48769136d HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow no-progress include-tag multi_ack_detailed no-done symref=HEAD:refs/heads/devel agent=git/2:2.4.8+github-1181-g8567b4c
+003f9740c232c1b0c4a6358651bc632a21e48769136d refs/heads/master
+0000`));
+  });
+
+  app.post(
+    '/heehee/git-upload-pack',
+    bodyParser.text({type: 'application/x-git-upload-pack-request'}),
+    (req, res) => {
+      console.log(req.body.replace(/\0/g, '\\0'));
+      res.setHeader('Content-Type', 'application/x-git-upload-pack-result');
+      res.send(new Buffer(0));
+    });
 
   /*  app.get('/', (req, res) => {
     res.send(genericPage({
