@@ -3,6 +3,7 @@ import compression from "compression";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
 import bodyParser from "body-parser";
+import fs from "fs";
 
 import GitHubClient from "./GitHubClient";
 import {getDiscovery, getPack} from "./GitClient";
@@ -69,6 +70,8 @@ function setUpRoutes() {
 
   app.get('/FetchTest', (req, res, next) => {
     getPack().then(result => {
+      fs.writeFileSync('/tmp/response', result);
+      fs.writeFileSync('/tmp/response.pack', result.slice(8));
       res.send(`${result.length}`);
     }).catch(next);
   });
