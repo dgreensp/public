@@ -11,7 +11,7 @@ const zlib = require('zlib');
 //
 // Inflate the content, and return the inflated content along with number of
 // bytes read.  This is a useful operation for streaming parsing of git pack
-// files.  The built-in zlib module does not support "inflating a prefix"
+// files.  The built-in zlib module does not support inflating a prefix
 // of a buffer (with a way to find out how long the prefix was, i.e. how many
 // bytes were consumed), and coupled with the streaming requirement, this
 // is the simplest approach.
@@ -52,6 +52,10 @@ export class ChunkedPrefixInflater {
   // of the input data does not inflate to a series of `inflatedSize` bytes,
   // in which case you should stop using the instance.
   addChunk(chunk) {
+    if (this._error) {
+      throw new Error("A zlib error has occurred previously on this instance");
+    }
+
     const oldRemainingOut = this.inflatedSize - this._offset;
 
     const ret = this._handle.writeSync(
