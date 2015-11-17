@@ -6,7 +6,7 @@ export default class Wow extends React.Component {
     alert("HI");
   }
   render() {
-    return <span className="Wow-span" onClick={this.foo.bind(this)}>
+    return <span className="Wow-span" onClick={e => this.foo()}>
       {this.props.text}
     </span>;
   }

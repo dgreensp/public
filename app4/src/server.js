@@ -8,6 +8,7 @@ import fs from "fs";
 import GitHubClient from "./GitHubClient";
 import {getDiscovery, getPack} from "./GitClient";
 import Wow from "./Wow";
+import {scanPack} from "./scanPack";
 
 const app = express();
 app.use(compression());
@@ -71,8 +72,10 @@ function setUpRoutes() {
   app.get('/FetchTest', (req, res, next) => {
     getPack().then(result => {
       fs.writeFileSync('/tmp/response', result);
-      fs.writeFileSync('/tmp/response.pack', result.slice(8));
+      const pack = result.slice(8);
+      fs.writeFileSync('/tmp/response.pack', pack);
       res.send(`${result.length}`);
+      scanPack(pack);
     }).catch(next);
   });
 
