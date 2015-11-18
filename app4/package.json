@@ -58,7 +58,8 @@
       "es7.trailingFunctionCommas",
       "flow",
       "react",
-      "es6.modules"
+      "es6.modules",
+      "regenerator"
     ]
   }
 }
