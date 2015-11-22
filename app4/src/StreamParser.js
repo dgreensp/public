@@ -1,3 +1,31 @@
+export class StreamParser {
+  constructor(generatorFunction) {
+    this._chunkConsumer = makeChunkConsumer(generatorFunction);
+    this._chunkConsumer.next();
+    this.done = false;
+    this.result = null;
+  }
+
+  addChunk(buffer) {
+    if (! Buffer.isBuffer(buffer)) {
+      throw new Error("Chunk must be a Buffer in StreamParser");
+    }
+
+    if (this.done) {
+      return this.result;
+    } else {
+      const {value, done} = this._chunkConsumer.next(buffer);
+      if (done) {
+        this.done = true;
+        this.result = value;
+        return this.result;
+      } else {
+        return null;
+      }
+    }
+  }
+}
+
 // An extractor is a function that takes:
 //
 // * `chunks` - non-empty array of non-empty Buffers
@@ -74,29 +102,6 @@ Object.assign(extractors, {
   }
 });
 
-export class StreamParser {
-  constructor(generatorFunction) {
-    this._chunkConsumer = makeChunkConsumer(generatorFunction);
-    this._chunkConsumer.next();
-    this.done = false;
-    this.result = null;
-  }
-
-  addChunk(buffer) {
-    if (this.done) {
-      return this.result;
-    } else {
-      const {value, done} = this._chunkConsumer.next(buffer);
-      if (done) {
-        this.done = true;
-        this.result = value;
-        return this.result;
-      } else {
-        return null;
-      }
-    }
-  }
-}
 
 export class TestParser extends StreamParser {
   constructor() {
@@ -109,13 +114,13 @@ export class TestParser extends StreamParser {
   }
 }
 
-export function* makeChunkConsumer(parser) {
+function* makeChunkConsumer(parser) {
   const chunks = []; // Buffers of non-zero length
   let available = 0;
   let c = 0; // which chunk we're on
   let offset = 0; // current offset into `chunks[c]`
 
-  function addChunk(newChunk) {
+  function appendChunk(newChunk) {
     if (newChunk.length) {
       chunks.push(newChunk);
       available += newChunk.length;
@@ -125,14 +130,16 @@ export function* makeChunkConsumer(parser) {
   const generator = parser();
   let info = generator.next();
 
+  let i = 0;
   while (! info.done) {
+    i++;
     const extractor = info.value;
 
     // make sure we have at least one byte available,
     // which means we have at least one chunk, and a byte
     // to point to in that chunk, when we invoke an extractor.
     while (available === 0) {
-      addChunk((yield));
+      appendChunk((yield));
     }
     // Invariant: `available > 0`
     // Invariant: `chunks[c]` exists and `offset < chunks[c].length`.
@@ -148,7 +155,7 @@ export function* makeChunkConsumer(parser) {
       while (! extracted) {
         const availableNow = available;
         while (available === availableNow) {
-          addChunk((yield));
+          appendChunk((yield));
         }
         extracted = extractor(chunks, c, offset, available);
       }
@@ -161,7 +168,7 @@ export function* makeChunkConsumer(parser) {
 
     available -= bytesConsumed;
     offset += bytesConsumed;
-    while (offset >= chunks[c].length && (c+1) < chunks.length) {
+    while (c < chunks.length && offset >= chunks[c].length) {
       offset -= chunks[c].length;
       c++;
     }

@@ -12,10 +12,15 @@ export default function jasmine(func) {
     for (var key in decl) {
       if (key !== 'args') {
         const spec = decl[key];
-        // XXX async
-        it(key, () => {
-          spec(args);
-        });
+        if (typeof spec === 'object') {
+          // nested spec
+          jasmine(expect => [key, spec]);
+        } else {
+          // XXX async
+          it(key, () => {
+            spec(args);
+          });
+        }
       }
     }
   });
