@@ -44,6 +44,11 @@ export class StreamParser {
 // When an extractor is called:
 // * `available > 0`
 // * `chunks[c]` exists and `offset < chunks[c].length`
+//
+// When an extractor is called multiple times as a result of returning `null`,
+// the `c` and `offset` arguments will be the same each time; the `available`
+// argument will be a greater number each time; and the `chunks` array will
+// contain the same chunks plus at least one new chunk each time.
 export const extractors = {
   byte: (chunks, c, offset, available) => {
     return { result: chunks[c].readUInt8(offset),
@@ -62,9 +67,8 @@ export const extractors = {
           return { result: curChunk.slice(offset, offset+n),
                    totalBytesConsumed: n };
         } else {
-          const numChunks = chunks.length;
-          if (c === numChunks-1) {
-            return null;
+          if (c === (chunks.length - 1)) {
+            throw new Error("assertion fail: more bytes should be available");
           }
           // bytes are at a chunk boundary; allocate new Buffer
           const result = new Buffer(n);
@@ -73,17 +77,17 @@ export const extractors = {
           curChunk.copy(result, 0, offset, curChunk.length);
           // copy data from more chunks
           let j = c+1;
-          while (bytesNeeded > 0 && j < numChunks) {
+          while (bytesNeeded > 0 && j < chunks.length) {
             const newChunk = chunks[j];
             const bytesToTake = Math.min(newChunk.length, bytesNeeded);
             newChunk.copy(result, n-bytesNeeded, 0, bytesToTake);
             bytesNeeded -= bytesToTake;
+            j++;
           }
           if (bytesNeeded) {
-            return null;
-          } else {
-            return { result: result, totalBytesConsumed: n };
+            throw new Error("assertion fail: more bytes should be available");
           }
+          return { result: result, totalBytesConsumed: n };
         }
       }
     };
@@ -94,11 +98,18 @@ const bytes4 = extractors.bytes(4);
 
 Object.assign(extractors, {
   uint32: (chunks, c, offset, available) => {
-    const ret = bytes4(chunks, c, offset, available);
-    if (ret) {
+    if (available < 4) {
+      return null;
+    } else if (chunks[c].length - offset >= 4) {
+      // fast path for performance; bytes are in same chunk
+      return { result: chunks[c].readUInt32BE(offset),
+               totalBytesConsumed: 4 };
+    } else {
+      // bytes are split across chunks
+      const ret = bytes4(chunks, c, offset, available);
       ret.result = ret.result.readUInt32BE(0);
+      return ret;
     }
-    return ret;
   }
 });
 
@@ -161,6 +172,9 @@ function* makeChunkConsumer(parser) {
       }
       result = extracted.result;
       bytesConsumed = extracted.totalBytesConsumed;
+      if (typeof bytesConsumed !== 'number') {
+        throw new Error("extractor must return totalBytesConsumed");
+      }
       if (bytesConsumed > available) {
         throw new Error("Parser tried to consume more bytes than available");
       }

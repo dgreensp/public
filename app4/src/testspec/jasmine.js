@@ -17,7 +17,13 @@ export default function jasmine(func) {
           jasmine(expect => [key, spec]);
         } else {
           // XXX async
-          it(key, () => {
+          let focus = false;
+          let specName = key;
+          if (specName.charAt(0) === '!') {
+            specName = specName.slice(1);
+            focus = true;
+          }
+          (focus ? fit : it)(specName, () => {
             spec(args);
           });
         }
