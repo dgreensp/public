@@ -55,6 +55,9 @@ export const extractors = {
              totalBytesConsumed: 1 };
   },
   bytes(n) {
+    if (! (n >= 1)) {
+      throw new Error("Positive number of bytes required");
+    }
     return (chunks, c, offset, available) => {
       if (available < n) {
         // call us back when there are more bytes available

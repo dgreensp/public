@@ -15,6 +15,11 @@ const zlib = require('zlib');
 // of a buffer (with a way to find out how long the prefix was, i.e. how many
 // bytes were consumed), and coupled with the streaming requirement, this
 // is the simplest approach.
+//
+// To detect the end of the deflated content, we need to offer the underlying
+// zlib implementation a byte and see it get refused, so when inflating an
+// entire stream or at the end of a stream, you must call `addEOF` to get
+// the results.
 export class ChunkedPrefixInflater {
 
   constructor(inflatedSize) {
@@ -23,7 +28,7 @@ export class ChunkedPrefixInflater {
     }
     this.inflatedSize = inflatedSize;
     this.result = new Buffer(inflatedSize);
-    this._offset = 0;
+    this._offset = 0; // byte index into this.result
     this._handle = new binding.Zlib(binding.INFLATE);
     this._error = null;
 
@@ -54,6 +59,8 @@ export class ChunkedPrefixInflater {
   addChunk(chunk) {
     if (this._error) {
       throw new Error("A zlib error has occurred previously on this instance");
+    } else if (! this._handle) {
+      throw new Error("Already returned result");
     }
 
     const oldRemainingOut = this.inflatedSize - this._offset;
@@ -73,20 +80,33 @@ export class ChunkedPrefixInflater {
     this._offset += bytesEmitted;
     this.totalBytesConsumed += bytesConsumed;
 
-    if (remainingOut === 0) {
+    if (remainingIn === 0) {
+      return null;
+    } else if (remainingOut === 0) {
       this._handle.close();
+      this._handle = null;
       return {
         result: this.result,
         chunkBytesConsumed: bytesConsumed,
         totalBytesConsumed: this.totalBytesConsumed
       };
-    } else if (remainingIn === 0) {
-      return null;
     } else {
       throw new Error(`Didn't inflate to ${this.inflatedSize} bytes after ` +
                       `consuming ${this.totalBytesConsumed}, ` +
                       `emitting ${this._offset}`);
     }
+  }
+
+  addEOF() {
+    if (this._offset !== this.inflatedSize) {
+      throw new Error("Unexpected EOF inflating stream");
+    }
+    const result = this.addChunk(new Buffer([0]));
+    if (! result) {
+      // zlib took our 0 byte and used it?
+      throw new Error("Error in zip inflation");
+    }
+    return result;
   }
 
 }

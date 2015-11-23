@@ -9,6 +9,6 @@ gulp.task('tests.run', function () {
     .pipe(jasmine({verbose: true, includeStackTrace: true}));
 });
 
-gulp.task('tests.watch', ['tests.run'], function () {
-  gulp.watch(testsFiles, ['tests.run']);
+gulp.task('tests.watch', function () {
+  gulp.watch('lib/**/*.js', ['tests.run']);
 });

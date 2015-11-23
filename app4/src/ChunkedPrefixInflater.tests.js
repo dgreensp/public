@@ -17,9 +17,10 @@ jasmine(expect => ["ChunkPrefixInflater", {
 
   "inflates a buffer"({deflated}) {
     const cpi = new CPI(11);
-    expect(cpi.addChunk(deflated)).toEqual(
+    expect(cpi.addChunk(deflated)).toBe(null);
+    expect(cpi.addEOF()).toEqual(
       { result: new Buffer('HELLO WORLD'),
-        chunkBytesConsumed: 19,
+        chunkBytesConsumed: 0,
         totalBytesConsumed: 19
       });
   },
