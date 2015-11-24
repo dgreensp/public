@@ -142,5 +142,4 @@ jasmine(expect => ["StreamParser", {
 
     ...differentChunkSpecs(expect)
   }
-
 }]);
