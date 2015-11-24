@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import crypto from 'crypto';
 
 // Takes a Buffer and returns a Buffer.  To get hex, use `.toString('hex')`
 // on the buffer.

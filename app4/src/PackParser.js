@@ -1,5 +1,6 @@
 import {StreamParser, extractors} from './StreamParser';
 import {deflatedBytes} from './StreamParser-zip';
+import {sha1} from './sha1';
 
 export class PackParser extends StreamParser {
   constructor() {
@@ -17,8 +18,20 @@ const OBJECT_TYPE_COMMIT = 1;
 const OBJECT_TYPE_TREE = 2;
 const OBJECT_TYPE_BLOB = 3;
 const OBJECT_TYPE_TAG = 4;
+// these two are not really object types so much as "packed object" types
 const OBJECT_TYPE_OFFSET_DELTA = 6;
 const OBJECT_TYPE_REF_DELTA = 7;
+
+function getObjectTypeString(typeNum) {
+  // These type strings aren't just for us; they are used by git.
+  switch (typeNum) {
+  case OBJECT_TYPE_COMMIT: return 'commit';
+  case OBJECT_TYPE_TREE: return 'tree';
+  case OBJECT_TYPE_BLOB: return 'blob';
+  case OBJECT_TYPE_TAG: return 'tag';
+  default: throw new Error(`${typeNum} is not a major object type`);
+  }
+}
 
 const bytes20 = bytes(20);
 
@@ -35,27 +48,21 @@ function* parsePack() {
 
   for (let i = 0; i < numObjects; i++) {
     const {objectType, objectSize} = yield* readObjectTypeAndSize();
-    let type, ref, body;
+    let type;
+    let ref;
+    let body;
     switch (objectType) {
     case OBJECT_TYPE_COMMIT:
-      type = 'commit';
-      break;
     case OBJECT_TYPE_TREE:
-      type = 'tree';
-      break;
     case OBJECT_TYPE_BLOB:
-      type = 'blob';
-      break;
     case OBJECT_TYPE_TAG:
-      type = 'tag';
+      type = getObjectTypeString(objectType);
       break;
     case OBJECT_TYPE_OFFSET_DELTA:
-      type = 'offset-delta'; // XXX
-      ref = yield* readVariableLengthInt();
-      break;
+      throw new Error("Object offsets in pack file not supported");
     case OBJECT_TYPE_REF_DELTA:
       type = 'ref-delta'; // XXX
-      ref = yield bytes20;
+      ref = (yield bytes20).toString('hex');
       break;
     default:
       throw new Error(`Unknown object type: ${objectType}`);
@@ -63,7 +70,15 @@ function* parsePack() {
 
     body = yield deflatedBytes(objectSize);
 
-    let obj = (ref ? {type, ref, body} : {type, body});
+    let obj;
+    if (ref) {
+      obj = {type, ref, body};
+    } else {
+      const sha = sha1(Buffer.concat(
+        [new Buffer(type + ' ' + body.length + '\0'), body])).toString('hex');
+      obj = {type, body, sha};
+    }
+
     objects.push(obj);
   }
 
