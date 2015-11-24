@@ -1,4 +1,4 @@
-import {StreamParser, extractors} from './StreamParser';
+import {StreamParser, extractors, parse} from './StreamParser';
 import {deflatedBytes} from './StreamParser-zip';
 import {sha1} from './sha1';
 
@@ -8,7 +8,7 @@ export class PackParser extends StreamParser {
   }
 }
 
-const {byte, bytes, uint32} = extractors;
+const {byte, bytes, uint32, EOF} = extractors;
 
 function error(msg) {
   throw new Error(`Error parsing PACK file: ${msg}`);
@@ -98,12 +98,36 @@ function* readObjectTypeAndSize() {
   return {objectType, objectSize};
 }
 
-function* readVariableLengthInt() {
+// Used by git to encode delta base offsets.
+function* readBEBase128Int() {
   let b = yield byte;
   let result = b & 0x7f;
   while (b & 0x80) {
     b = yield byte;
     result = ((result + 1) << 7) | (b & 0x7f);
   }
+  return result;
+}
+
+// Used by git to encode delta base and result lengths.
+function* readLEBase128Int() {
+  let b = yield byte;
+  let result = b & 0x7f;
+  let bits = 7;
+  while (b & 0x80) {
+    b = yield byte;
+    result |= (b & 0x7f) << bits;
+    bits += 7;
+  }
+  return result;
+}
+
+export function* readDelta() {
+  const ops = [];
+  const result = {
+    baseLength: (yield* readLEBase128Int()),
+    resultLength: (yield* readLEBase128Int()),
+    ops: ops
+  };
   return result;
 }

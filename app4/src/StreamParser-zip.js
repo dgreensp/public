@@ -8,7 +8,7 @@ export function deflatedBytes(inflatedSize) {
   const cpi = new ChunkedPrefixInflater(inflatedSize);
   let nextChunkIndex = 0; // index of chunk we haven't added to CPI
 
-  return (chunks, c, offset, available) => {
+  return (chunks, c, offset, available, isEOF) => {
     // read data starting at `offset` of `chunks[c]` -- but skipping
     // chunks we've already read (indexes less than `nextChunkIndex` --
     // and continuing until we get a result from the ChunkedPrefixInflater
@@ -28,6 +28,10 @@ export function deflatedBytes(inflatedSize) {
       if (result) {
         return result;
       }
+    }
+
+    if (isEOF) {
+      return cpi.addEOF();
     }
 
     return null;

@@ -1,3 +1,7 @@
+export function parse(buffer, generatorFunction) {
+  return (new StreamParser(generatorFunction)).addFinalChunk(buffer);
+}
+
 export class StreamParser {
   constructor(generatorFunction) {
     this._chunkConsumer = makeChunkConsumer(generatorFunction);
@@ -24,6 +28,22 @@ export class StreamParser {
       }
     }
   }
+
+  addEOF() {
+    if (this.done) {
+      return this.result;
+    } else {
+      const result = this._chunkConsumer.next('EOF').value;
+      this.result = result;
+      this.done = true;
+      return result;
+    }
+  }
+
+  addFinalChunk(buffer) {
+    this.addChunk(buffer);
+    return this.addEOF();
+  }
 }
 
 // An extractor is a function that takes:
@@ -34,6 +54,11 @@ export class StreamParser {
 // * `available` - total number of available bytes,
 //     including remaining bytes in `chunks[c]` starting at `offset`,
 //     and bytes in subsequent chunks
+// * `isEOF` - true/false; true if there are no more chunks.
+//     note that there still may be bytes available.
+//     most extractors can ignore this argument and simply return `null`
+//     if the bytes they need aren't available, and then an appropriate
+//     error will be thrown automatically.
 //
 // An extractor returns one of the following:
 // * `null` - the extractor will be called again when more bytes are available
@@ -42,15 +67,25 @@ export class StreamParser {
 //   chunks.
 //
 // When an extractor is called:
-// * `available > 0`
+// * Either `available > 0` or `available === 0` and we are at EOF.
+//   (Returning `null` at EOF will cause an "Unexpected EOF" error, which
+//   is presumably what you want in this case.)
 // * `chunks[c]` exists and `offset < chunks[c].length`
 //
 // When an extractor is called multiple times as a result of returning `null`,
-// the `c` and `offset` arguments will be the same each time; the `available`
-// argument will be a greater number each time; and the `chunks` array will
-// contain the same chunks plus at least one new chunk each time.
+// the `c` and `offset` arguments will be the same each time.  The `available`
+// argument will be a greater number each time, and the `chunks` array will
+// contain the same chunks plus at least one new chunk each time -- unless
+// isEOF is newly set to true.
 export const extractors = {
+  EOF: (chunks, c, offset, available, isEOF) => {
+    return { result: (available === 0),
+             totalBytesConsumed: 0 };
+  },
   byte: (chunks, c, offset, available) => {
+    if (available < 1) {
+      return null;
+    }
     return { result: chunks[c].readUInt8(offset),
              totalBytesConsumed: 1 };
   },
@@ -128,14 +163,18 @@ export class TestParser extends StreamParser {
   }
 }
 
+// Pass in Buffer chunks, or the string 'EOF' to indicate EOF.
 function* makeChunkConsumer(parser) {
   const chunks = []; // Buffers of non-zero length
   let available = 0;
   let c = 0; // which chunk we're on
   let offset = 0; // current offset into `chunks[c]`
+  let isEOF = false;
 
-  function appendChunk(newChunk) {
-    if (newChunk.length) {
+  function receiveChunk(newChunk) {
+    if (newChunk === 'EOF') {
+      isEOF = true;
+    } else if (newChunk.length) {
       chunks.push(newChunk);
       available += newChunk.length;
     }
@@ -152,27 +191,35 @@ function* makeChunkConsumer(parser) {
     // make sure we have at least one byte available,
     // which means we have at least one chunk, and a byte
     // to point to in that chunk, when we invoke an extractor.
-    while (available === 0) {
-      appendChunk((yield));
+    // At this point, isEOF is false.
+    while (available === 0 && !isEOF) {
+      receiveChunk((yield));
     }
-    // Invariant: `available > 0`
-    // Invariant: `chunks[c]` exists and `offset < chunks[c].length`.
+    // Invariants (if not isEOF):
+    // - `available > 0`
+    // - `chunks[c]` exists and `offset < chunks[c].length`.
+    //
+    // If and only if isEOF, `available === 0`.
 
     let result, bytesConsumed;
-    if (extractor === extractors.byte) {
+    if (available && extractor === extractors.byte) {
       // this case is purely a performance optimization, to avoid an
       // extra function call and object allocation.
       result = chunks[c].readUInt8(offset);
       bytesConsumed = 1;
     } else {
-      let extracted = extractor(chunks, c, offset, available);
-      while (! extracted) {
-        const availableNow = available;
-        while (available === availableNow) {
-          appendChunk((yield));
+      let extracted = extractor(chunks, c, offset, available, isEOF);
+      while (!extracted && !isEOF) {
+        const oldAvailable = available;
+        while (available === oldAvailable && !isEOF) {
+          receiveChunk((yield));
         }
-        extracted = extractor(chunks, c, offset, available);
+        extracted = extractor(chunks, c, offset, available, isEOF);
       }
+      if (!extracted) {
+        generator.throw(new Error("Unexpected EOF"));
+      }
+
       result = extracted.result;
       bytesConsumed = extracted.totalBytesConsumed;
       if (typeof bytesConsumed !== 'number') {

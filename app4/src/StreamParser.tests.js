@@ -1,8 +1,8 @@
 import jasmine from './testspec/jasmine';
-import {StreamParser, extractors} from "./StreamParser";
+import {StreamParser, extractors, parse} from "./StreamParser";
 import {deflatedBytes} from "./StreamParser-zip";
 
-const {byte, uint32, bytes} = extractors;
+const {byte, uint32, bytes, EOF} = extractors;
 
 // Return an array of integers from 0 to (n-1) inclusive.
 function range(n) {
@@ -20,11 +20,14 @@ function range(n) {
 // `chunksAfterDone` is greater than 0, then that many additional chunks at
 // the end are expected to return a result and leave the StreamParser in a
 // "done" state.
-function addChunksAndExpect(expect, streamParser, chunks, expected, chunksAfterDone=0) {
+function addChunksAndExpect(expect, streamParser, chunks, expected) {
+  let isDone = false;
   chunks.forEach((chunk, i) => {
     const ret = streamParser.addChunk(chunk);
-    const shouldBeDone = (i >= chunks.length - 1 - chunksAfterDone);
-    if (shouldBeDone) {
+    if (streamParser.done) {
+      isDone = true;
+    }
+    if (isDone) {
       expect(ret).toEqual(expected);
       expect(streamParser.done).toBe(true);
       expect(streamParser.result).toEqual(expected);
@@ -34,11 +37,16 @@ function addChunksAndExpect(expect, streamParser, chunks, expected, chunksAfterD
       expect(streamParser.result).toBe(null);
     }
   });
+
+  const ret = streamParser.addEOF();
+  expect(ret).toEqual(expected);
+  expect(streamParser.done).toBe(true);
+  expect(streamParser.result).toEqual(expected);
 }
 
 const differentChunkSpecs = expect => ({
   "given all at once"({sp, input, expected}) {
-    expect(sp.addChunk(input)).toEqual(expected);
+    expect(sp.addFinalChunk(input)).toEqual(expected);
   },
   "given one at a time"({sp, input, expected}) {
     const chunks = range(input.length).map(
@@ -47,14 +55,14 @@ const differentChunkSpecs = expect => ({
   },
   "given extra"({sp, input, expected}) {
     const chunk = Buffer.concat([input, new Buffer('xyz')]);
-    expect(sp.addChunk(chunk)).toEqual(expected);
+    expect(sp.addFinalChunk(chunk)).toEqual(expected);
   },
   "given zero-size chunks"({sp, input, expected}) {
     addChunksAndExpect(
       expect, sp,
       [input.slice(0, 3), new Buffer(0), new Buffer(0),
        input.slice(3), new Buffer(0)],
-      expected, 1);
+      expected);
   }
 });
 
@@ -124,6 +132,22 @@ jasmine(expect => ["StreamParser", {
   "can parse deflated bytes": {
     args() {
       const sp = new StreamParser(function* () {
+        return (yield deflatedBytes(11)).toString();
+      });
+      const input = new Buffer([0x78, 0x9c, 0xf3, 0x70, 0xf5,
+                                0xf1, 0xf1, 0x57, 0x08, 0xf7,
+                                0x0f, 0xf2, 0x71, 0x01, 0x00,
+                                0x12, 0x8b, 0x03, 0x1d]);
+      const expected = 'HELLO WORLD';
+      return {sp, input, expected};
+    },
+
+    ...differentChunkSpecs(expect)
+  },
+
+  "can parse deflated bytes surrounded by other data": {
+    args() {
+      const sp = new StreamParser(function* () {
         const inflatedSize = yield uint32;
         const message = (yield deflatedBytes(inflatedSize)).toString();
         const footer = (yield bytes(2)).toString();
@@ -141,5 +165,15 @@ jasmine(expect => ["StreamParser", {
     },
 
     ...differentChunkSpecs(expect)
+  },
+
+  "handles EOF"() {
+    expect(parse(new Buffer([0x01]),
+                 function* () {
+                   return [(yield EOF), (yield EOF), (yield EOF),
+                           (yield byte),
+                           (yield EOF), (yield EOF), (yield EOF)];
+                 })).toEqual([false, false, false, 1, true, true, true]);
   }
+
 }]);
