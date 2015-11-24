@@ -167,13 +167,26 @@ jasmine(expect => ["StreamParser", {
     ...differentChunkSpecs(expect)
   },
 
-  "handles EOF"() {
-    expect(parse(new Buffer([0x01]),
-                 function* () {
-                   return [(yield EOF), (yield EOF), (yield EOF),
-                           (yield byte),
-                           (yield EOF), (yield EOF), (yield EOF)];
-                 })).toEqual([false, false, false, 1, true, true, true]);
+  "handles EOF": {
+    "detection"() {
+      expect(parse(new Buffer([0x01]),
+                   function* () {
+                     return [(yield EOF), (yield EOF), (yield EOF),
+                             (yield byte),
+                             (yield EOF), (yield EOF), (yield EOF)];
+                   })).toEqual([false, false, false, 1, true, true, true]);
+    },
+    "looping until"() {
+      expect(parse(new Buffer([0x01, 0x02, 0x03]),
+                   function* () {
+                     const array = [];
+                     while (! (yield EOF)) {
+                       array.push((yield byte));
+                     }
+                     return array;
+                   })).toEqual([1, 2, 3]);
+
+    }
   }
 
 }]);

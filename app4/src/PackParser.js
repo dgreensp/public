@@ -4,7 +4,7 @@ import {sha1} from './sha1';
 
 export class PackParser extends StreamParser {
   constructor() {
-    super(parsePack);
+    super(readPack);
   }
 }
 
@@ -35,7 +35,11 @@ function getObjectTypeString(typeNum) {
 
 const bytes20 = bytes(20);
 
-function* parsePack() {
+export function parsePack(buffer) {
+  return parse(buffer, readPack);
+}
+
+export function* readPack() {
   if ((yield bytes(4)).toString() !== 'PACK') {
     error("Expected pack file to start with PACK");
   }
@@ -72,7 +76,8 @@ function* parsePack() {
 
     let obj;
     if (ref) {
-      obj = {type, ref, body};
+      const delta = parse(body, readDelta);
+      obj = {type, ref, delta};
     } else {
       const sha = sha1(Buffer.concat(
         [new Buffer(type + ' ' + body.length + '\0'), body])).toString('hex');
@@ -124,10 +129,32 @@ function* readLEBase128Int() {
 
 export function* readDelta() {
   const ops = [];
-  const result = {
+  const ret = {
     baseLength: (yield* readLEBase128Int()),
     resultLength: (yield* readLEBase128Int()),
     ops: ops
   };
-  return result;
+
+  while (! (yield EOF)) {
+    const headByte = yield byte;
+    if (headByte & 0x80) {
+      // copy op; represent as an [offset, length] pair
+      let offset = 0;
+      let length = 0;
+      if (headByte & 0x01) offset |= (yield byte) << 0;
+      if (headByte & 0x02) offset |= (yield byte) << 8;
+      if (headByte & 0x04) offset |= (yield byte) << 16;
+      if (headByte & 0x08) offset |= (yield byte) << 24;
+      if (headByte & 0x10) length |= (yield byte) << 0;
+      if (headByte & 0x20) length |= (yield byte) << 8;
+      if (headByte & 0x40) length |= (yield byte) << 16;
+      if (length === 0) length = 0x10000;
+      //ops.push([offset, length]);
+    } else {
+      // insert op; represent as a Buffer
+      const buf = yield bytes(headByte);
+      //ops.push(buf);
+    }
+  }
+  return ret;
 }
