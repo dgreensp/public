@@ -76,7 +76,7 @@ export function* readPack() {
 
     let obj;
     if (ref) {
-      const delta = parse(body, readDelta);
+      const delta = parseDelta(body);
       obj = {type, ref, delta};
     } else {
       const sha = sha1(Buffer.concat(
@@ -103,58 +103,93 @@ function* readObjectTypeAndSize() {
   return {objectType, objectSize};
 }
 
-// Used by git to encode delta base offsets.
-function* readBEBase128Int() {
-  let b = yield byte;
-  let result = b & 0x7f;
-  while (b & 0x80) {
-    b = yield byte;
-    result = ((result + 1) << 7) | (b & 0x7f);
+export function parseDelta(buffer) {
+  const result = parseDeltaInner(buffer);
+  if (! result) {
+    throw new Error("Error parsing delta");
   }
   return result;
 }
 
-// Used by git to encode delta base and result lengths.
-function* readLEBase128Int() {
-  let b = yield byte;
-  let result = b & 0x7f;
-  let bits = 7;
-  while (b & 0x80) {
-    b = yield byte;
-    result |= (b & 0x7f) << bits;
-    bits += 7;
-  }
-  return result;
-}
+function parseDeltaInner(buffer) {
+  let i = 0;
+  let len = buffer.length;
 
-export function* readDelta() {
+  let baseLength, resultLength;
+  for (let n = 0; n < 2; n++) {
+    // read a LEBase128Int
+    if (i >= len) return null;
+    let b = buffer.readUInt8(i);
+    i++;
+    let x = b & 0x7f;
+    let bits = 7;
+    while (b & 0x80) {
+      if (i >= len) return null;
+      b = buffer.readUInt8(i);
+      i++;
+      x |= (b & 0x7f) << bits;
+      bits += 7;
+    }
+    if (n === 0) {
+      baseLength = x;
+    } else {
+      resultLength = x;
+    }
+  }
+
   const ops = [];
-  const ret = {
-    baseLength: (yield* readLEBase128Int()),
-    resultLength: (yield* readLEBase128Int()),
-    ops: ops
-  };
-
-  while (! (yield EOF)) {
-    const headByte = yield byte;
+  while (i < len) {
+    const headByte = buffer.readUInt8(i);
+    i++;
     if (headByte & 0x80) {
       // copy op; represent as an [offset, length] pair
       let offset = 0;
       let length = 0;
-      if (headByte & 0x01) offset |= (yield byte) << 0;
-      if (headByte & 0x02) offset |= (yield byte) << 8;
-      if (headByte & 0x04) offset |= (yield byte) << 16;
-      if (headByte & 0x08) offset |= (yield byte) << 24;
-      if (headByte & 0x10) length |= (yield byte) << 0;
-      if (headByte & 0x20) length |= (yield byte) << 8;
-      if (headByte & 0x40) length |= (yield byte) << 16;
+      if (headByte & 0x01) {
+        if (i >= len) return null;
+        offset |= buffer.readUInt8(i) << 0;
+        i++;
+      }
+      if (headByte & 0x02) {
+        if (i >= len) return null;
+        offset |= buffer.readUInt8(i) << 8;
+        i++;
+      }
+      if (headByte & 0x04) {
+        if (i >= len) return null;
+        offset |= buffer.readUInt8(i) << 16;
+        i++;
+      }
+      if (headByte & 0x08) {
+        if (i >= len) return null;
+        offset |= buffer.readUInt8(i) << 24;
+        i++;
+      }
+      if (headByte & 0x10) {
+        if (i >= len) return null;
+        length |= buffer.readUInt8(i) << 0;
+        i++;
+      }
+      if (headByte & 0x20) {
+        if (i >= len) return null;
+        length |= buffer.readUInt8(i) << 8;
+        i++;
+      }
+      if (headByte & 0x40) {
+        if (i >= len) return null;
+        length |= buffer.readUInt8(i) << 16;
+        i++;
+      }
       if (length === 0) length = 0x10000;
-      //ops.push([offset, length]);
+      ops.push([offset, length]);
     } else {
       // insert op; represent as a Buffer
-      const buf = yield bytes(headByte);
-      //ops.push(buf);
+      const insertSize = headByte;
+      if (i + insertSize > len) return null;
+      ops.push(buffer.slice(i, i + insertSize));
+      i += insertSize;
     }
   }
-  return ret;
+
+  return { baseLength, resultLength, ops };
 }
