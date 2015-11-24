@@ -79,8 +79,7 @@ export function* readPack() {
       const delta = parseDelta(body);
       obj = {type, ref, delta};
     } else {
-      const sha = sha1(Buffer.concat(
-        [new Buffer(type + ' ' + body.length + '\0'), body])).toString('hex');
+      const sha = objectSha(type, body);
       obj = {type, body, sha};
     }
 
@@ -88,6 +87,15 @@ export function* readPack() {
   }
 
   return objects;
+}
+
+export function objectSha(type, ...body) {
+  let len = 0;
+  for (let chunk of body) {
+    len += chunk.length;
+  }
+  return sha1(new Buffer(type + ' ' + len + '\0'),
+              ...body).toString('hex');
 }
 
 function* readObjectTypeAndSize() {
@@ -192,4 +200,32 @@ function parseDeltaInner(buffer) {
   }
 
   return { baseLength, resultLength, ops };
+}
+
+export function applyDeltaAsChunks(delta, baseBuffer) {
+  if (! Buffer.isBuffer(baseBuffer)) {
+    throw new Error("applyDelta requires a Buffer as base");
+  }
+  if (! delta.ops) {
+    throw new Error("applyDelta requires a parsed delta object");
+  }
+  if (baseBuffer.length !== delta.baseLength) {
+    throw new Error("Mismatched base length applying delta");
+  }
+
+  return delta.ops.map(op => {
+    if (Buffer.isBuffer(op)) {
+      return op;
+    } else {
+      const [offset, length] = op;
+      if (offset < 0 || (offset + length) > baseBuffer.length) {
+        throw new Error("Bad (offset,length) in delta");
+      }
+      return baseBuffer.slice(offset, offset + length);
+    }
+  });
+}
+
+export function applyDelta(delta, baseBuffer) {
+  return Buffer.concat(applyDeltaAsChunks(delta, baseBuffer));
 }
