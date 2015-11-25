@@ -56,16 +56,19 @@ jasmine(expect => ["PackParser", {
 
       // test objectSha on chunks returned from `applyDeltaAsChunks`
       expect(pp.objectSha('commit',
-                       ...pp.applyDeltaAsChunks(delta, base))).toBe(
-                         'd0535fa8221558f5f816a6f73c90b03e305b338f');
+                          new Multibuffer(pp.applyDeltaAsChunks(delta, base)))).toBe(
+                            'd0535fa8221558f5f816a6f73c90b03e305b338f');
     },
 
     "applyDeltaToMultibuffer"({example1: {base, delta, result}}) {
       const baseMulti = new Multibuffer(sliceUp(base, 8));
       const resultMulti = applyDeltaToMultibuffer(delta, baseMulti);
       expect(resultMulti.toBuffer()).toEqual(result);
+      for (let ch of resultMulti.chunks) {
+        expect(Buffer.isBuffer(ch)).toBe(true);
+      }
       // this is how to take a SHA of a Multibuffer:
-      expect(pp.objectSha('commit', ...resultMulti.chunks)).toBe(
+      expect(pp.objectSha('commit', resultMulti)).toBe(
         'd0535fa8221558f5f816a6f73c90b03e305b338f');
     }
   }

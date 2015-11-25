@@ -1,14 +1,16 @@
 import crypto from 'crypto';
 
-// Takes Buffers and returns a Buffer.  To get hex, use `.toString('hex')`
-// on the buffer.
-export function sha1(...buffers) {
+// Takes a Buffer or Multibuffer and returns a Buffer.  To get hex,
+// use `.toString('hex')` on the resulting Buffer.
+export function sha1(buffer) {
   const hash = crypto.createHash("sha1");
-  for (let data of buffers) {
-    if (! Buffer.isBuffer(data)) {
-      throw new Error("A Buffer is required as input to sha1");
+  if (Buffer.isBuffer(buffer)) {
+    hash.update(buffer);
+  } else {
+    // Multibuffer
+    for (let chunk of buffer.chunks) {
+      hash.update(chunk);
     }
-    hash.update(data);
   }
   return hash.digest();
 }

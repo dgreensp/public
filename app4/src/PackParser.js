@@ -49,7 +49,16 @@ export function* readPack() {
   }
 
   const numObjects = yield uint32;
-  const objects = [];
+  // Objects are put into `objectsBySha` when their shas are known.
+  // When they are delta-encoded relative to some sha "ref", they
+  // are kept in `danglingRefs` until the referenced object is known.
+  const objectsBySha = {}; // sha -> object (map by .sha)
+  const danglingRefs = {}; // sha -> [{ref, delta}] (multimap by .ref)
+
+  // objects have:
+  // - type: String
+  // - sha: String
+  // - content: Multibuffer
 
   for (let i = 0; i < numObjects; i++) {
     const {objectType, objectSize} = yield* readObjectTypeAndSize();
@@ -66,7 +75,6 @@ export function* readPack() {
     case OBJECT_TYPE_OFFSET_DELTA:
       throw new Error("Object offsets in pack file not supported");
     case OBJECT_TYPE_REF_DELTA:
-      type = 'ref-delta'; // XXX
       ref = (yield bytes20).toString('hex');
       break;
     default:
@@ -75,28 +83,41 @@ export function* readPack() {
 
     body = yield deflatedBytes(objectSize);
 
-    let obj;
+    let sha, obj;
     if (ref) {
       const delta = parseDelta(body);
-      obj = {type, ref, delta};
+      if (objectsBySha[ref]) {
+        const baseObj = objectsBySha[ref];
+        type = baseObj.type;
+        const content = applyDeltaToMultibuffer(delta, baseObj.content);
+        sha = objectSha(type, content);
+        obj = {type, sha, content};
+        objectsBySha[sha] = obj;
+      } else {
+        console.log("!!!Forward ref: " + ref);
+      }
     } else {
-      const sha = objectSha(type, body);
-      obj = {type, body, sha};
+      sha = objectSha(type, body);
+      obj = {type, sha, content: new Multibuffer([body])};
+      objectsBySha[sha] = obj;
     }
-
-    objects.push(obj);
   }
 
-  return objects;
+  return objectsBySha;
 }
 
-export function objectSha(type, ...body) {
-  let len = 0;
-  for (let chunk of body) {
-    len += chunk.length;
+// `buffer` can be a Buffer or Multibuffer
+export function objectSha(type, buffer) {
+  const chunks = [new Buffer(type + ' ' + buffer.length + '\0')];
+  if (Buffer.isBuffer(buffer)) {
+    chunks.push(buffer);
+  } else {
+    // Multibuffer
+    for (let ch of buffer.chunks) {
+      chunks.push(ch);
+    }
   }
-  return sha1(new Buffer(type + ' ' + len + '\0'),
-              ...body).toString('hex');
+  return sha1(new Multibuffer(chunks)).toString('hex');
 }
 
 function* readObjectTypeAndSize() {
@@ -249,7 +270,9 @@ export function applyDeltaToMultibuffer(delta, baseMulti) {
         throw new Error("Bad (offset,length) in delta");
       }
       const slice = baseMulti.slice(offset, offset + length);
-      chunks.push.apply(chunks, slice.chunks);
+      for (let ch of slice.chunks) {
+        chunks.push(ch);
+      }
     }
   }
 
