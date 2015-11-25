@@ -1,6 +1,7 @@
 import {StreamParser, extractors, parse} from './StreamParser';
 import {deflatedBytes} from './StreamParser-zip';
 import {sha1} from './sha1';
+import {Multibuffer} from "./Multibuffer";
 
 export class PackParser extends StreamParser {
   constructor() {
@@ -228,4 +229,29 @@ export function applyDeltaAsChunks(delta, baseBuffer) {
 
 export function applyDelta(delta, baseBuffer) {
   return Buffer.concat(applyDeltaAsChunks(delta, baseBuffer));
+}
+
+export function applyDeltaToMultibuffer(delta, baseMulti) {
+  if (! delta.ops) {
+    throw new Error("applyDelta requires a parsed delta object");
+  }
+  if (baseMulti.length !== delta.baseLength) {
+    throw new Error("Mismatched base length applying delta");
+  }
+
+  const chunks = [];
+  for (let op of delta.ops) {
+    if (Buffer.isBuffer(op)) {
+      chunks.push(op);
+    } else {
+      const [offset, length] = op;
+      if (offset < 0 || (offset + length) > baseMulti.length) {
+        throw new Error("Bad (offset,length) in delta");
+      }
+      const slice = baseMulti.slice(offset, offset + length);
+      chunks.push.apply(chunks, slice.chunks);
+    }
+  }
+
+  return new Multibuffer(chunks);
 }

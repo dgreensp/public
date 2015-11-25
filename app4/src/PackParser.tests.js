@@ -1,6 +1,7 @@
 import jasmine from './testspec/jasmine';
-import {parseDelta, applyDelta} from "./PackParser";
+import {parseDelta, applyDelta, applyDeltaToMultibuffer} from "./PackParser";
 import * as pp from "./PackParser";
+import {Multibuffer} from "./Multibuffer";
 
 jasmine(expect => ["PackParser", {
   "parseDelta": {
@@ -40,19 +41,41 @@ jasmine(expect => ["PackParser", {
   },
 
   "applyDelta": {
-    "works"() {
-      const base = new Buffer('tree e7dd93ed2f90ba6efb69069010659e99d2edb75c\nparent 9f1dfaa5b60fd97b285e7403ff3867223d8fc6d3\nparent d0535fa8221558f5f816a6f73c90b03e305b338f\nauthor Avital Oliver <avital@thewe.net> 1444170260 -0700\ncommitter Avital Oliver <avital@thewe.net> 1444170260 -0700\n\nMerge branch \'pr/5298\' into devel\n');
-      const rawDelta = new Buffer('a602e801905e31617574686f72204465616e2042726574746c65203c6465616e4062726574746c652e636f6d3e203134343333333537303891c03a1f3533202d303730300a0a466978207479706f20696e20636f6d6d656e742e0a', 'hex');
-      const result = new Buffer('tree e7dd93ed2f90ba6efb69069010659e99d2edb75c\nparent 9f1dfaa5b60fd97b285e7403ff3867223d8fc6d3\nauthor Dean Brettle <dean@brettle.com> 1443335708 -0700\ncommitter Avital Oliver <avital@thewe.net> 1444170253 -0700\n\nFix typo in comment.\n');
+    args() {
+      return {
+        example1: {
+          base: new Buffer('tree e7dd93ed2f90ba6efb69069010659e99d2edb75c\nparent 9f1dfaa5b60fd97b285e7403ff3867223d8fc6d3\nparent d0535fa8221558f5f816a6f73c90b03e305b338f\nauthor Avital Oliver <avital@thewe.net> 1444170260 -0700\ncommitter Avital Oliver <avital@thewe.net> 1444170260 -0700\n\nMerge branch \'pr/5298\' into devel\n'),
+          delta: parseDelta(new Buffer('a602e801905e31617574686f72204465616e2042726574746c65203c6465616e4062726574746c652e636f6d3e203134343333333537303891c03a1f3533202d303730300a0a466978207479706f20696e20636f6d6d656e742e0a', 'hex')),
+          result: new Buffer('tree e7dd93ed2f90ba6efb69069010659e99d2edb75c\nparent 9f1dfaa5b60fd97b285e7403ff3867223d8fc6d3\nauthor Dean Brettle <dean@brettle.com> 1443335708 -0700\ncommitter Avital Oliver <avital@thewe.net> 1444170253 -0700\n\nFix typo in comment.\n')
+        }
+      };
+    },
 
-      const delta = parseDelta(rawDelta);
-
+    "works"({example1: {base, delta, result}}) {
       expect(applyDelta(delta, base)).toEqual(result);
 
       // test objectSha on chunks returned from `applyDeltaAsChunks`
       expect(pp.objectSha('commit',
                        ...pp.applyDeltaAsChunks(delta, base))).toBe(
                          'd0535fa8221558f5f816a6f73c90b03e305b338f');
+    },
+
+    "applyDeltaToMultibuffer"({example1: {base, delta, result}}) {
+      const baseMulti = new Multibuffer(sliceUp(base, 8));
+      const resultMulti = applyDeltaToMultibuffer(delta, baseMulti);
+      expect(resultMulti.toBuffer()).toEqual(result);
+      // this is how to take a SHA of a Multibuffer:
+      expect(pp.objectSha('commit', ...resultMulti.chunks)).toBe(
+        'd0535fa8221558f5f816a6f73c90b03e305b338f');
     }
   }
+
 }]);
+
+function sliceUp(buffer, n) {
+  const chunks = [];
+  for (var i = 0; i < buffer.length; i += n) {
+    chunks.push(buffer.slice(i, i+n));
+  }
+  return chunks;
+}

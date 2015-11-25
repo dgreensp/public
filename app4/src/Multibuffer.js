@@ -1,3 +1,6 @@
+// A Multibuffer is a wrapper around an Array of Buffers that acts
+// like a single Buffer in certain ways.  For example, it can be
+// sliced to yield another Multibuffer.
 export class Multibuffer {
   constructor(chunks, _totalLength = calcTotalLength(chunks)) {
     this.chunks = chunks;
@@ -20,6 +23,10 @@ export class Multibuffer {
     }
     const newChunks = [];
     let offset = 0;
+    // This implementation is O(N) in the number of chunks,
+    // whereas it could be O(log N) using binary search,
+    // at the cost of complexity and with not much speed-up for
+    // very small N.
     for (let ch of this.chunks) {
       const startInChunk = Math.max(start - offset, 0);
       const endInChunk = Math.min(end - offset, ch.length);
