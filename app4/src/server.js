@@ -75,7 +75,6 @@ function setUpRoutes() {
       const pack = result.slice(8);
       fs.writeFileSync('/tmp/response.pack', pack);
       res.send(`${result.length}`);
-      scanPack(pack);
     }).catch(next);
   });
 
