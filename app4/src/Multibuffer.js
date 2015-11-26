@@ -25,6 +25,12 @@ export class Multibuffer {
     if (end < 0) {
       end += this.length;
     }
+    if (start > this.length) {
+      start = this.length;
+    }
+    if (end > this.length) {
+      end = this.length;
+    }
     if (end < start) {
       end = start;
     }
