@@ -49,12 +49,7 @@ export function* readPack() {
   }
 
   const numObjects = yield uint32;
-  // Objects are put into `objectsBySha` when their shas are known.
-  // When they are delta-encoded relative to some sha "ref", they
-  // are kept in `danglingRefs` until the referenced object is known.
   const objectsBySha = {}; // sha -> object (map by .sha)
-  const danglingRefs = {}; // sha -> [{ref, delta}] (multimap by .ref)
-
   // objects have:
   // - type: String
   // - sha: String
@@ -94,7 +89,10 @@ export function* readPack() {
         obj = {type, sha, content};
         objectsBySha[sha] = obj;
       } else {
-        console.log("!!!Forward ref: " + ref);
+        // While the pack file format doesn't require that delta-encoded
+        // objects come after their base, I believe that git guarantees it
+        // in practice.
+        throw new Error("Unexpected forward reference");
       }
     } else {
       sha = objectSha(type, body);
