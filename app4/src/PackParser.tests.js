@@ -45,7 +45,7 @@ jasmine(expect => ["PackParser", {
       return {
         example1: {
           base: new Buffer('tree e7dd93ed2f90ba6efb69069010659e99d2edb75c\nparent 9f1dfaa5b60fd97b285e7403ff3867223d8fc6d3\nparent d0535fa8221558f5f816a6f73c90b03e305b338f\nauthor Avital Oliver <avital@thewe.net> 1444170260 -0700\ncommitter Avital Oliver <avital@thewe.net> 1444170260 -0700\n\nMerge branch \'pr/5298\' into devel\n'),
-          delta: parseDelta(new Buffer('a602e801905e31617574686f72204465616e2042726574746c65203c6465616e4062726574746c652e636f6d3e203134343333333537303891c03a1f3533202d303730300a0a466978207479706f20696e20636f6d6d656e742e0a', 'hex')),
+          delta: new Buffer('a602e801905e31617574686f72204465616e2042726574746c65203c6465616e4062726574746c652e636f6d3e203134343333333537303891c03a1f3533202d303730300a0a466978207479706f20696e20636f6d6d656e742e0a', 'hex'),
           result: new Buffer('tree e7dd93ed2f90ba6efb69069010659e99d2edb75c\nparent 9f1dfaa5b60fd97b285e7403ff3867223d8fc6d3\nauthor Dean Brettle <dean@brettle.com> 1443335708 -0700\ncommitter Avital Oliver <avital@thewe.net> 1444170253 -0700\n\nFix typo in comment.\n')
         }
       };
@@ -56,13 +56,14 @@ jasmine(expect => ["PackParser", {
 
       // test objectSha on chunks returned from `applyDeltaAsChunks`
       expect(pp.objectSha('commit',
-                          new Multibuffer(pp.applyDeltaAsChunks(delta, base)))).toBe(
+                          new Multibuffer(pp.applyDeltaAsChunks(
+                            parseDelta(delta), base)))).toBe(
                             'd0535fa8221558f5f816a6f73c90b03e305b338f');
     },
 
     "applyDeltaToMultibuffer"({example1: {base, delta, result}}) {
       const baseMulti = new Multibuffer(sliceUp(base, 8));
-      const resultMulti = applyDeltaToMultibuffer(delta, baseMulti);
+      const resultMulti = applyDeltaToMultibuffer(parseDelta(delta), baseMulti);
       expect(resultMulti.toBuffer()).toEqual(result);
       for (let ch of resultMulti.chunks) {
         expect(Buffer.isBuffer(ch)).toBe(true);

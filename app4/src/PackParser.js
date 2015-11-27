@@ -80,11 +80,12 @@ export function* readPack() {
 
     let sha, obj;
     if (ref) {
-      const delta = parseDelta(body);
+      //XXXconst delta = parseDelta(body);
       if (objectsBySha[ref]) {
         const baseObj = objectsBySha[ref];
         type = baseObj.type;
-        const content = applyDeltaToMultibuffer(delta, baseObj.content);
+        //const content = applyDeltaToMultibuffer(delta, baseObj.content);
+        const content = applyDelta(body, baseObj.content);
         sha = objectSha(type, content);
         obj = {type, sha, content};
         objectsBySha[sha] = obj;
@@ -96,7 +97,7 @@ export function* readPack() {
       }
     } else {
       sha = objectSha(type, body);
-      obj = {type, sha, content: new Multibuffer([body])};
+      obj = {type, sha, content: body};
       objectsBySha[sha] = obj;
     }
   }
@@ -247,7 +248,104 @@ export function applyDeltaAsChunks(delta, baseBuffer) {
 }
 
 export function applyDelta(delta, baseBuffer) {
-  return Buffer.concat(applyDeltaAsChunks(delta, baseBuffer));
+  //return Buffer.concat(applyDeltaAsChunks(delta, baseBuffer));
+  const resultBuffer = applyDeltaInner(delta, baseBuffer);
+  if (! resultBuffer) {
+    throw new Error("Error applying delta");
+  }
+  return resultBuffer;
+
+}
+
+function applyDeltaInner(delta, baseBuffer) {
+  let i = 0;
+  let len = delta.length;
+
+  let baseLength, resultLength;
+  for (let n = 0; n < 2; n++) {
+    // read a LEBase128Int
+    if (i >= len) return null;
+    let b = delta.readUInt8(i);
+    i++;
+    let x = b & 0x7f;
+    let bits = 7;
+    while (b & 0x80) {
+      if (i >= len) return null;
+      b = delta.readUInt8(i);
+      i++;
+      x |= (b & 0x7f) << bits;
+      bits += 7;
+    }
+    if (n === 0) {
+      baseLength = x;
+    } else {
+      resultLength = x;
+    }
+  }
+
+  if (baseBuffer.length !== baseLength) {
+    throw new Error("Mismatched base length applying delta");
+  }
+  const resultBuffer = new Buffer(resultLength);
+  let resultOffset = 0;
+
+  const ops = [];
+  while (i < len) {
+    const headByte = delta.readUInt8(i);
+    i++;
+    if (headByte & 0x80) {
+      // copy op; read offset and length into baseBuffer to copy
+      let offset = 0;
+      let length = 0;
+      if (headByte & 0x01) {
+        if (i >= len) return null;
+        offset |= delta.readUInt8(i) << 0;
+        i++;
+      }
+      if (headByte & 0x02) {
+        if (i >= len) return null;
+        offset |= delta.readUInt8(i) << 8;
+        i++;
+      }
+      if (headByte & 0x04) {
+        if (i >= len) return null;
+        offset |= delta.readUInt8(i) << 16;
+        i++;
+      }
+      if (headByte & 0x08) {
+        if (i >= len) return null;
+        offset |= delta.readUInt8(i) << 24;
+        i++;
+      }
+      if (headByte & 0x10) {
+        if (i >= len) return null;
+        length |= delta.readUInt8(i) << 0;
+        i++;
+      }
+      if (headByte & 0x20) {
+        if (i >= len) return null;
+        length |= delta.readUInt8(i) << 8;
+        i++;
+      }
+      if (headByte & 0x40) {
+        if (i >= len) return null;
+        length |= delta.readUInt8(i) << 16;
+        i++;
+      }
+      if (length === 0) length = 0x10000;
+      baseBuffer.copy(resultBuffer, resultOffset, offset, offset + length);
+      resultOffset += length;
+    } else {
+      // insert op; insert bytes from delta
+      const insertSize = headByte;
+      if (i + insertSize > len) return null;
+      delta.copy(resultBuffer, resultOffset, i, i + insertSize);
+      i += insertSize;
+      resultOffset += insertSize;
+    }
+  }
+
+  return resultBuffer;
 }
 
 export function applyDeltaToMultibuffer(delta, baseMulti) {
