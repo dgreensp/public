@@ -2,6 +2,7 @@ import {StreamParser, extractors, parse} from './StreamParser';
 import {deflatedBytes} from './StreamParser-zip';
 import {sha1} from './sha1';
 import {Multibuffer} from "./Multibuffer";
+import {SlowBuffer} from 'buffer';
 
 export class PackParser extends StreamParser {
   constructor() {
@@ -55,6 +56,15 @@ export function* readPack() {
   // - sha: String
   // - content: Multibuffer
 
+  function calculateContent(obj) {
+    if (obj.content) {
+      return obj.content;
+    } else {
+      const baseObj = objectsBySha[obj.ref];
+      return applyDelta(obj.delta, calculateContent(baseObj));
+    }
+  }
+
   for (let i = 0; i < numObjects; i++) {
     const {objectType, objectSize} = yield* readObjectTypeAndSize();
     let type;
@@ -80,21 +90,26 @@ export function* readPack() {
 
     let sha, obj;
     if (ref) {
-      //XXXconst delta = parseDelta(body);
-      if (objectsBySha[ref]) {
-        const baseObj = objectsBySha[ref];
-        type = baseObj.type;
-        //const content = applyDeltaToMultibuffer(delta, baseObj.content);
-        const content = applyDelta(body, baseObj.content);
-        sha = objectSha(type, content);
-        obj = {type, sha, content};
-        objectsBySha[sha] = obj;
-      } else {
+      const baseObj = objectsBySha[ref];
+      if (! baseObj) {
         // While the pack file format doesn't require that delta-encoded
         // objects come after their base, I believe that git guarantees it
         // in practice.
         throw new Error("Unexpected forward reference");
       }
+      type = baseObj.type;
+      ref = baseObj.sha; // intern the string
+      const delta = body;
+      const content = applyDelta(delta, calculateContent(baseObj));
+      sha = objectSha(type, content);
+      if (type === 'commit') {
+        obj = {type, sha, content};
+      } else {
+        // leave as a ref, but we need to calculate the SHA
+        const deltaDepth = (baseObj.deltaDepth || 0) + 1;
+        obj = {type, sha, ref, delta, deltaDepth};
+      }
+      objectsBySha[sha] = obj;
     } else {
       sha = objectSha(type, body);
       obj = {type, sha, content: body};
@@ -286,7 +301,7 @@ function applyDeltaInner(delta, baseBuffer) {
   if (baseBuffer.length !== baseLength) {
     throw new Error("Mismatched base length applying delta");
   }
-  const resultBuffer = new Buffer(resultLength);
+  const resultBuffer = new SlowBuffer(resultLength);
   let resultOffset = 0;
 
   const ops = [];

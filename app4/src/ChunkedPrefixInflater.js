@@ -1,5 +1,6 @@
 const binding = process.binding('zlib');
 const zlib = require('zlib');
+const SlowBuffer = require('buffer').SlowBuffer;
 
 // Given:
 // - a series of Buffers ("chunks") of data,
@@ -27,7 +28,8 @@ export class ChunkedPrefixInflater {
       throw new Error("inflatedSize is required");
     }
     this.inflatedSize = inflatedSize;
-    this.result = new Buffer(inflatedSize);
+    // SlowBuffer avoids extra memory retention (over 100 MB observed)
+    this.result = new SlowBuffer(inflatedSize);
     this._offset = 0; // byte index into this.result
     this._handle = new binding.Zlib(binding.INFLATE);
     this._error = null;
