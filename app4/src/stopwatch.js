@@ -5,6 +5,7 @@ export class Stopwatch {
     this.totalTime = 0.0;
     // stats:
     this.maxElapsed = 0.0;
+    this.numRuns = 0;
   }
 
   start() {
@@ -24,6 +25,7 @@ export class Stopwatch {
     const elapsed = secs + (nanos * 1e-9);
     this.totalTime += elapsed;
     this.maxElapsed = Math.max(this.maxElapsed, elapsed);
+    this.numRuns++;
   }
 
   getTime() {

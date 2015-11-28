@@ -170,6 +170,7 @@ function* makeChunkConsumer(parser) {
   let c = 0; // which chunk we're on
   let offset = 0; // current offset into `chunks[c]`
   let isEOF = false;
+  let totalPastChunksLength = 0;
 
   function receiveChunk(newChunk) {
     if (newChunk === 'EOF') {
@@ -205,6 +206,9 @@ function* makeChunkConsumer(parser) {
       // extra function call and object allocation.
       result = chunks[c].readUInt8(offset);
       bytesConsumed = 1;
+    } else if (extractor === 'offset') {
+      result = totalPastChunksLength + offset;
+      bytesConsumed = 0;
     } else {
       let extracted = extractor(chunks, c, offset, available, isEOF);
       while (!extracted && !isEOF) {
@@ -232,6 +236,7 @@ function* makeChunkConsumer(parser) {
     offset += bytesConsumed;
     while (c < chunks.length && offset >= chunks[c].length) {
       offset -= chunks[c].length;
+      totalPastChunksLength += chunks[c].length;
       c++;
     }
     // Invariant: Either `offset < chunks[c].length`, meaning there

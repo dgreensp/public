@@ -3,6 +3,7 @@ import {deflatedBytes} from './StreamParser-zip';
 import {sha1} from './sha1';
 import {Multibuffer} from "./Multibuffer";
 import {SlowBuffer} from 'buffer';
+import {Stopwatch} from './stopwatch';
 
 export class PackParser extends StreamParser {
   constructor() {
@@ -66,6 +67,7 @@ export function* readPack() {
   }
 
   for (let i = 0; i < numObjects; i++) {
+    const objectOffset = yield 'offset';
     const {objectType, objectSize} = yield* readObjectTypeAndSize();
     let type;
     let ref;
@@ -103,18 +105,20 @@ export function* readPack() {
       const content = applyDelta(delta, calculateContent(baseObj));
       sha = objectSha(type, content);
       if (type === 'commit') {
-        obj = {type, sha, content};
+        obj = {type, sha, content, offset: objectOffset};
       } else {
         // leave as a ref, but we need to calculate the SHA
         const deltaDepth = (baseObj.deltaDepth || 0) + 1;
-        obj = {type, sha, ref, delta, deltaDepth};
+        obj = {type, sha, ref, delta, deltaDepth, offset: objectOffset};
       }
       objectsBySha[sha] = obj;
     } else {
       sha = objectSha(type, body);
-      obj = {type, sha, content: body};
+      obj = {type, sha, content: body, offset: objectOffset};
       objectsBySha[sha] = obj;
     }
+
+    //if (type !== 'commit') break;
   }
 
   return objectsBySha;
@@ -262,14 +266,17 @@ export function applyDeltaAsChunks(delta, baseBuffer) {
   });
 }
 
+export const applyDeltaTime = new Stopwatch();
+
 export function applyDelta(delta, baseBuffer) {
   //return Buffer.concat(applyDeltaAsChunks(delta, baseBuffer));
+  applyDeltaTime.start();
   const resultBuffer = applyDeltaInner(delta, baseBuffer);
   if (! resultBuffer) {
     throw new Error("Error applying delta");
   }
+  applyDeltaTime.stop();
   return resultBuffer;
-
 }
 
 function applyDeltaInner(delta, baseBuffer) {

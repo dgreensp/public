@@ -13,18 +13,22 @@ const SHAS = {
 };
 
 export function getPack() {
-  const nocap = `0032want ${SHAS.public}
-0032want ${SHAS.public}
+  const nocap = `0032want ${SHAS.meteor}
+0032want ${SHAS.meteor}
 00000009done
 `;
-  const allcap = `007fwant ${SHAS.public} multi_ack_detailed no-done side-band-64k thin-pack ofs-delta agent=git/1.9.2
-0032want ${SHAS.public}
+  const allcap = `007fwant ${SHAS.meteor} multi_ack_detailed no-done side-band-64k thin-pack ofs-delta agent=git/1.9.2
+0032want ${SHAS.meteor}
+00000009done
+`;
+  const somecap = `0071want ${SHAS.meteor} multi_ack_detailed no-done thin-pack ofs-delta agent=git/1.9.2
+0032want ${SHAS.meteor}
 00000009done
 `;
   return request({
-    uri: 'https://github.com/dgreensp/public.git/git-upload-pack',
+    uri: 'https://github.com/meteor/meteor.git/git-upload-pack',
     method: 'POST',
-    body: nocap,
+    body: somecap,
     headers: {
       'Content-Type': 'application/x-git-upload-pack-request',
       'Accept': 'application/x-git-upload-pack-result'
