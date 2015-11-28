@@ -1,3 +1,8 @@
+import {Stopwatch} from './stopwatch';
+
+export const sliceTime = new Stopwatch;
+export const chunkStartsTime = new Stopwatch;
+
 // A Multibuffer is a wrapper around an Array of Buffers that acts
 // like a single Buffer in certain ways.  For example, it can be
 // sliced to yield another Multibuffer.
@@ -6,12 +11,14 @@ export class Multibuffer {
     this.chunks = chunks;
     this.length = _totalLength;
 
+    chunkStartsTime.start();
     let count = 0;
     this.chunkStarts = this.chunks.map(ch => {
       const start = count;
       count += ch.length;
       return start;
     });
+    chunkStartsTime.stop();
   }
 
   toBuffer() {
@@ -19,6 +26,7 @@ export class Multibuffer {
   }
 
   slice(start = 0, end = this.length) {
+    sliceTime.start();
     if (start < 0) {
       start += this.length;
     }
@@ -58,7 +66,9 @@ export class Multibuffer {
         }
       }
     }
-    return new Multibuffer(newChunks, end - start);
+    const newBuf = new Multibuffer(newChunks, end - start);
+    sliceTime.stop();
+    return newBuf;
   }
 }
 
