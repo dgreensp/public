@@ -183,9 +183,7 @@ function* makeChunkConsumer(parser) {
   const generator = parser();
   let info = generator.next();
 
-  let i = 0;
   while (! info.done) {
-    i++;
     const extractor = info.value;
 
     // make sure we have at least one byte available,
