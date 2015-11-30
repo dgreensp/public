@@ -56,6 +56,7 @@ export function* readPack() {
   // - type: String
   // - sha: String
   // - content: Multibuffer
+  const objectsByOffset = {};
 
   function calculateContent(obj) {
     if (obj.content) {
@@ -80,7 +81,12 @@ export function* readPack() {
       type = getObjectTypeString(objectType);
       break;
     case OBJECT_TYPE_OFFSET_DELTA:
-      throw new Error("Object offsets in pack file not supported");
+      const baseOffset = objectOffset - (yield* readBEBase128Int());
+      if (! objectsByOffset[baseOffset]) {
+        throw new Error("Couldn't resolve offset ref");
+      }
+      ref = objectsByOffset[baseOffset].sha;
+      break;
     case OBJECT_TYPE_REF_DELTA:
       ref = (yield bytes20).toString('hex');
       break;
@@ -112,10 +118,12 @@ export function* readPack() {
         obj = {type, sha, ref, delta, deltaDepth, offset: objectOffset};
       }
       objectsBySha[sha] = obj;
+      objectsByOffset[objectOffset] = obj;
     } else {
       sha = objectSha(type, body);
       obj = {type, sha, content: body, offset: objectOffset};
       objectsBySha[sha] = obj;
+      objectsByOffset[objectOffset] = obj;
     }
 
     //if (type !== 'commit') break;
@@ -395,4 +403,15 @@ export function applyDeltaToMultibuffer(delta, baseMulti) {
   }
 
   return new Multibuffer(chunks);
+}
+
+// Used by git to encode delta base offsets.
+function* readBEBase128Int() {
+  let b = yield byte;
+  let result = b & 0x7f;
+  while (b & 0x80) {
+    b = yield byte;
+    result = ((result + 1) << 7) | (b & 0x7f);
+  }
+  return result;
 }
