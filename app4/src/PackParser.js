@@ -319,7 +319,6 @@ function applyDeltaInner(delta, baseBuffer) {
   const resultBuffer = new SlowBuffer(resultLength);
   let resultOffset = 0;
 
-  const ops = [];
   while (i < len) {
     const headByte = delta.readUInt8(i);
     i++;
