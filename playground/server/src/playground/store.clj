@@ -1,11 +1,17 @@
-(ns playground.redis
-  (:require [taoensso.carmine :as redis]))
+(ns playground.store
+  (:require [taoensso.carmine :as redis]
+            [aws.sdk.s3 :as s3]))
 
 (load-file "/Users/dgreenspan/Dropbox/Projects/playground-private.clj")
 
 (def GOO {:pool {} :spec REDIS-DB})
 
 (defmacro goo [& body] `(redis/wcar GOO ~@body))
+
+(def SLAG {:access-key (AWS-USER :key)
+           :secret-key (AWS-USER :secret)})
+
+(comment
 
 (goo (redis/keys "*"))
 
@@ -25,3 +31,12 @@
 (goo (redis/set "obj" {:hello "world"}))
 (goo (redis/get "obj"))
 (vec (goo (redis/parse-raw (redis/get "obj"))))
+
+(time (goo (redis/keys "*")))
+
+(time (s3/list-objects SLAG "slagstore"))
+(time (s3/object-exists? SLAG "slagstore" "foo"))
+
+(#'s3/s3-client SLAG)
+
+)
