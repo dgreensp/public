@@ -1,0 +1,6 @@
+/target
+/.lein-*
+/.nrepl-port
+/db/
+/git-data/
+/log/
