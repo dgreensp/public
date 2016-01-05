@@ -70,11 +70,12 @@ function setUpRoutes() {
   });
 
   app.get('/FetchTest', (req, res, next) => {
+    const T = Date.now();
     getPack().then(result => {
       fs.writeFileSync('/tmp/response', result);
       const pack = result.slice(8);
       fs.writeFileSync('/tmp/response.pack', pack);
-      res.send(`${result.length}`);
+      res.send(`${result.length} ${Date.now() - T}`);
     }).catch(next);
   });
 
