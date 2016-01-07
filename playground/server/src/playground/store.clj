@@ -13,6 +13,8 @@
 
 (comment
 
+(goo (redis/ping))
+
 (goo (redis/keys "*"))
 
 (goo (redis/set "foo" "bar"))
@@ -33,6 +35,13 @@
 (vec (goo (redis/parse-raw (redis/get "obj"))))
 
 (time (goo (redis/keys "*")))
+
+(goo (redis/set ["a" 1] "b"))
+
+(map vec (goo (redis/parse-raw (redis/keys "*"))))
+
+(doseq [k (goo (redis/parse-raw (redis/keys "*")))]
+  (goo (redis/del (redis/raw k))))
 
 (time (s3/list-objects SLAG "slagstore"))
 (time (s3/object-exists? SLAG "slagstore" "foo"))

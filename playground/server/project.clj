@@ -1,7 +1,8 @@
 (defproject playground-server "0.1.0-SNAPSHOT"
   :pedantic? :abort
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [com.taoensso/carmine "2.12.1"]
+                 [com.taoensso/carmine "2.12.1" :exclusions [com.taoensso/encore]]
+                 [com.taoensso/nippy "2.11.0-beta1"]
                  [clj-aws-s3 "0.3.10" :exclusions [joda-time]]
                  [joda-time/joda-time "2.9.1"]
                  ]
