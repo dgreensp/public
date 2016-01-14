@@ -46,6 +46,8 @@
 (time (s3/list-objects SLAG "slagstore"))
 (time (s3/object-exists? SLAG "slagstore" "foo"))
 
+(s3/put-object SLAG "slagstore" "foo" "bar")
+
 (#'s3/s3-client SLAG)
 
 )
